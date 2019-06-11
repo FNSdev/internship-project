@@ -1,1 +1,4 @@
 <h1>Hello</h1>
+{% if request.user is not None %}
+    {{ request.user.first_name }}
+{% endif %}

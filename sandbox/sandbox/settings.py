@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [
@@ -132,3 +133,14 @@ STATIC_URL = '/static/'
 # User model
 
 AUTH_USER_MODEL = 'user.User'
+
+# Backends
+
+AUTHENTICATION_BACKENDS = [
+    'user.backends.LoginByEmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Login URL
+
+LOGIN_URL = '/user/login'
