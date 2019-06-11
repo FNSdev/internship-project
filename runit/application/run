@@ -3,6 +3,7 @@
 source /sandbox/venv/bin/activate
 
 pushd /sandbox/sandbox
+
 python manage.py migrate
 
 if [[ $? != 0 ]]; then
@@ -10,7 +11,7 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 
-echo "from django.contrib.auth import get_user_model; import os; User = get_user_model(); User.objects.create_superuser('admin', 'admin@admin.me', os.getenv('DJANGO_ADMIN_PASSWORD')" | python manage.py shell
+echo "from django.contrib.auth import get_user_model; import os; User = get_user_model(); User.objects.create_superuser('admin', 'admin@admin.me', os.getenv('DJANGO_ADMIN_PASSWORD'), date_of_birth='1999-12-12')" | python manage.py shell
 
 if [[ $? != 0 ]]; then
     echo "SUPERUSER ALREADY EXISTS"
