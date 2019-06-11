@@ -1,0 +1,30 @@
+version: '3'
+services:
+  database:
+    build: docker/psql
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - DB_HOST
+      - DB_PORT
+      - PSQL_USER
+  application:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+    environment:
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - DB_HOST
+      - DB_PORT
+      - PSQL_USER
+      - DJANGO_SECRET_KEY
+      - DJANGO_ADMIN_PASSWORD

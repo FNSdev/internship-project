@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+source /sandbox/venv/bin/activate
+
+pushd /sandbox/sandbox
+python manage.py migrate
+
+if [[ $? != 0 ]]; then
+    echo "CAN NOT MIGRATE"
+    exit 1
+fi
+
+echo "from django.contrib.auth import get_user_model; import os; User = get_user_model(); User.objects.create_superuser('admin', 'admin@admin.me', os.getenv('DJANGO_ADMIN_PASSWORD')" | python manage.py shell
+
+if [[ $? != 0 ]]; then
+    echo "SUPERUSER ALREADY EXISTS"
+fi
+
+python manage.py runserver 0.0.0.0:8000
