@@ -6,7 +6,6 @@ class LoginByEmailBackend(ModelBackend):
     def authenticate(self, request, email=None, password=None, **kwargs):
         UserModel = get_user_model()
         try:
-            print(f'email={email}')
             user = UserModel.objects.get(email=email)
         except UserModel.DoesNotExist:
             return None

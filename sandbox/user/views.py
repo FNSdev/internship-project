@@ -39,7 +39,6 @@ class LoginView(views.View):
         email = request.POST['email']
         password = request.POST['password']
         user = authenticate(request, email=email, password=password)
-        print(user)
         if user is not None:
             login(request, user)
             return redirect('core:index')
