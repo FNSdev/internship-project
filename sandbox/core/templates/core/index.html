@@ -1,4 +1,19 @@
-<h1>Hello</h1>
-{% if request.user is not None %}
-    {{ request.user.first_name }}
-{% endif %}
+{% extends "base.html" %}
+
+{% load crispy_forms_tags %}
+
+{% block main %}
+
+    {% if request.user.is_authenticated %}
+        <h1>Hello, {{ request.user.email }}</h1>
+        <h2>
+            <a href="{% url 'user:profile' %}" class="btn btn-primary">Your profile</a>
+        </h2>
+    {% else %}
+        <h2>
+            <p><a href="{% url 'user:register' %}" class="btn btn-primary">Register</a></p>
+            <p><a href="{% url 'user:login' %}" class="btn btn-primary">Login</a></p>
+        </h2>
+    {% endif %}
+
+{% endblock %}

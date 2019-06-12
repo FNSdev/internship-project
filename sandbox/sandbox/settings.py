@@ -29,6 +29,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     '0.0.0.0',
+    'dc18a59f.ngrok.io',
 ]
 
 
@@ -144,3 +145,11 @@ AUTHENTICATION_BACKENDS = [
 # Login URL
 
 LOGIN_URL = '/user/login'
+
+# GitHub integration
+
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+
+GITHUB_LOGIN_URL = 'https://github.com/login/oauth/authorize'
+GITHUB_GET_TOKEN_URL = 'https://github.com/login/oauth/access_token'
