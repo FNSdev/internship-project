@@ -19,12 +19,5 @@ services:
       - "8000:8000"
     depends_on:
       - database
-    environment:
-      - DB_NAME
-      - DB_USER
-      - DB_PASSWORD
-      - DB_HOST
-      - DB_PORT
-      - PSQL_USER
-      - DJANGO_SECRET_KEY
-      - DJANGO_ADMIN_PASSWORD
+    env_file:
+      - .env

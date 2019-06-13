@@ -29,6 +29,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     '0.0.0.0',
+    '0093e64c.ngrok.io',
 ]
 
 
@@ -36,12 +37,14 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'core',
+    'user',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +130,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# User model
+
+AUTH_USER_MODEL = 'user.User'
+
+# Backends
+
+AUTHENTICATION_BACKENDS = [
+    'user.backends.LoginByEmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Login URL
+
+LOGIN_URL = '/user/login'
+
+# GitHub integration
+
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+
+GITHUB_LOGIN_URL = 'https://github.com/login/oauth/authorize'
+GITHUB_GET_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+
+GITHUB_SCOPE = 'repo user'
