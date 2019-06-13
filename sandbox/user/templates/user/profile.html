@@ -6,8 +6,12 @@
 
 
 {% block main %}
+    <h1>Your Profile</h1>
 
-    {% if request.user.is_authenticated %}
+    {% if github_token_valid %}
+        <h3>Your github token is valid</h3>
+    {% else %}
+        <h3>Please, add github token</h3>
         <a href="{% url 'user:create_github_token' %}" class="btn btn-primary">Login in GitHub</a>
     {% endif %}
 
