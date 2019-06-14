@@ -44,5 +44,6 @@ def get_repository_branches(token, user, repository):
     return response.status_code, response.json()
 
 
-def get_repository_content(token, user, name):
-    pass
+@safe_request
+def get_repository_content(token, user, repository):
+    raise NotImplementedError

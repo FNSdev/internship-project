@@ -19,6 +19,7 @@ RUN bash /sandbox/scripts/pip_install.sh /sandbox
 COPY sandbox/ /sandbox/sandbox
 COPY runit/application /etc/service/application
 RUN chmod +x /etc/service/application/run
-
+COPY runit/celery /etc/service/celery
+RUN chmod +x /etc/service/celery/run
 
 EXPOSE 80

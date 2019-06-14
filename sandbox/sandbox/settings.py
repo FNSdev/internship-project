@@ -33,3 +33,13 @@ DATABASES = {
 
 GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
 GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+
+# Celery
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_BEAT_SCHEDULE = {
+    'test-task': {
+        'task': 'core.tasks.test',
+        'schedule': 5,
+    }
+}

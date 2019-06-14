@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+source /sandbox/venv/bin/activate
+
+pushd /sandbox/sandbox
+
+celery -A sandbox worker -l info -B -E
