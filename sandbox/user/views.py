@@ -1,12 +1,13 @@
 from django import views
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect, reverse
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
 from user.forms import RegisterForm, LoginForm
 from user.models import User
-from github.token import get_login_url, create_token, is_token_valid
+from github_integration.utils.token import is_token_valid
+from github_integration.utils.repository import get_repository_list
+from django.contrib import messages
 
 
 class RegisterView(views.View):
@@ -52,24 +53,30 @@ class LoginView(views.View):
 
 class ProfileView(LoginRequiredMixin, views.View):
     def get(self, request):
+        user = request.user
+
+        error, github_token_valid = is_token_valid(user.github_token)
+        if not error:
+            messages.add_message(request, messages.INFO, 'Token was checked successfully')
+        else:
+            messages.add_message(request, messages.WARNING, f'An error occurred when checking token : {error}')
+
+        error, repos = get_repository_list(user.github_token)
+        data = []
+        if not error:
+            for repo in repos:
+                data.append({
+                    'name': repo.get('name'),
+                    'url': repo.get('html_url'),
+                    'description': repo.get('description'),
+                    'id': repo.get('id')
+                })
+        else:
+            messages.add_message(request, messages.WARNING, f'An error occurred when getting repositories : {error}')
+
         ctx = {
-            'github_token_valid': is_token_valid(request.user.github_token)
+            'github_token_valid': github_token_valid,
+            'repos': data
         }
 
         return render(request, 'user/profile.html', context=ctx)
-
-
-class GetGithubTokenView(LoginRequiredMixin, views.View):
-    def get(self, request):
-        code = request.GET.get('code')
-        token = create_token(code)
-        if token:
-            user = request.user
-            user.github_token = token
-            user.save()
-        return HttpResponseRedirect(reverse('core:index'))
-
-
-class CreateGithubTokenView(LoginRequiredMixin, views.View):
-    def get(self, request):
-        return HttpResponseRedirect(get_login_url())

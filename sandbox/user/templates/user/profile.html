@@ -4,6 +4,28 @@
     Profile
 {% endblock %}
 
+{% block sidebar_left %}
+    {% if github_token_valid %}
+        <h4>
+            Your repositories
+            <ul>
+                {% for repo in repos %}
+                    <div class="card mt-3" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ repo.name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ repo.id }}</h6>
+                            <p class="card-text">{{ repo.description }}</p>
+                            <a href="{{ repo.url }}" class="card-link">View on GitHub</a>
+                            <button class="btn btn-success add" id="{{ repo.name }}">Add to your account</button>
+                         </div>
+                    </div>
+                {% endfor %}
+            </ul>
+        </h4>
+    {% else %}
+    {% endif %}
+{% endblock %}
+
 
 {% block main %}
     <h1>Your Profile</h1>
@@ -12,7 +34,42 @@
         <h3>Your github token is valid</h3>
     {% else %}
         <h3>Please, add github token</h3>
-        <a href="{% url 'user:create_github_token' %}" class="btn btn-primary">Login in GitHub</a>
+        <a href="{% url 'github_integration:create_github_token' %}" class="btn btn-primary">Login in GitHub</a>
     {% endif %}
 
+{% endblock %}
+
+
+{% block sidebar_right %}
+
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extrajs %}
+    <script>
+        jQuery(document).on('click', '.add', function(e) {
+            var jq = jQuery.noConflict()
+            var repository = e.target.id
+
+            jQuery.ajax ({
+                type: 'POST',
+                url: "{% url 'github_integration:add_repository' %}",
+                data: {
+                    repository: repository,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    alert('Success')
+                }
+            })
+        })
+    </script>
 {% endblock %}
