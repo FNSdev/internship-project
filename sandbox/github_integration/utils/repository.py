@@ -18,6 +18,11 @@ def _get_json_response_with_token(token, url):
 
 def get_repository_list(token):
     url = '/'.join((settings.GITHUB_USER_URL, 'repos'))
+    params = {
+        'type': 'owner',
+    }
+    params = urllib.parse.urlencode(params)
+    url = f'{url}?{params}'
     return _get_json_response_with_token(token, url)
 
 
@@ -31,33 +36,11 @@ def get_repository_branches(token, user, repository):
     return _get_json_response_with_token(token, url)
 
 
-@safe_request
-def _get_subdirectory_content(token, url):
-    error, data = _get_json_response_with_token(token, url)
-    if error is not None:
-        return error, None
-
-    content = []
-
-    for d in data:
-        if d.get('type') == 'file':
-            content.append(d)
-        elif d.get('type') == 'dir':
-            error, data = _get_subdirectory_content(token, d.get('url'))
-
-            if error is not None:
-                return error, None
-
-            d['content'] = data
-            content.append(d)
-        else:
-            raise NotImplementedError(f'Content of type "{d.get("type")}" is not supported')
-
-    return None, content
-
-
-def get_repository_content(token, user, repository, branch):
-    url = '/'.join((settings.GITHUB_REPOS_URL, user, repository, 'contents'))
-    params = urllib.parse.urlencode({'ref': branch})
+def get_repository_tree(token, user, repository, sha):
+    url = '/'.join((settings.GITHUB_REPOS_URL, user, repository, 'git', 'trees', sha))
+    params = {
+        'recursive': 1,
+    }
+    params = urllib.parse.urlencode(params)
     url = f'{url}?{params}'
-    return _get_subdirectory_content(token, url)
+    return _get_json_response_with_token(token, url)

@@ -67,7 +67,7 @@
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 },
                 success: function(response) {
-                    alert('Success')
+                    alert(response['message'])
                 }
             })
         })

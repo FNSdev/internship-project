@@ -108,3 +108,12 @@ GITHUB_APPLICATIONS_URL = 'https://api.github.com/applications'
 GITHUB_REPOS_URL = 'https://api.github.com/repos'
 GITHUB_USERS_URL = 'https://api.github.com/users'
 GITHUB_USER_URL = 'https://api.github.com/user'
+
+# Celery
+
+CELERY_BEAT_SCHEDULE = {
+    'update_repositories': {
+        'task': 'github_integration.tasks.update_repositories_task',
+        'schedule': 15,
+    }
+}

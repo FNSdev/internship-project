@@ -257,3 +257,9 @@ fabric.properties
 # Pyre type checker
 
 # End of https://www.gitignore.io/api/pycharm,python,django
+
+# Celery
+
+celerybeat-schedule.bak
+celerybeat-schedule.dat
+celerybeat-schedule.dir
