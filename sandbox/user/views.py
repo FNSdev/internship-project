@@ -1,13 +1,15 @@
 from django import views
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from user.forms import RegisterForm, LoginForm
 from user.models import User
+from github_integration.models import Repository, Branch, Content
 from github_integration.utils.token import is_token_valid
 from github_integration.utils.repository import get_repository_list
-from django.contrib import messages
 
 
 class RegisterView(views.View):
@@ -54,18 +56,27 @@ class LoginView(views.View):
 class ProfileView(LoginRequiredMixin, views.View):
     def get(self, request):
         user = request.user
-
         error, github_token_valid = is_token_valid(user.github_token)
         if not error:
             messages.add_message(request, messages.INFO, 'Token was checked successfully')
         else:
             messages.add_message(request, messages.WARNING, f'An error occurred when checking token : {error}')
 
+        ctx = {
+            'github_token_valid': github_token_valid,
+        }
+
+        return render(request, 'user/profile.html', context=ctx)
+
+
+class GithubRepositoriesView(LoginRequiredMixin, views.View):
+    def get(self, request):
+        user = request.user
         error, repos = get_repository_list(user.github_token)
-        data = []
+        repositories = []
         if not error:
             for repo in repos:
-                data.append({
+                repositories.append({
                     'name': repo.get('name'),
                     'url': repo.get('html_url'),
                     'description': repo.get('description'),
@@ -75,8 +86,59 @@ class ProfileView(LoginRequiredMixin, views.View):
             messages.add_message(request, messages.WARNING, f'An error occurred when getting repositories : {error}')
 
         ctx = {
-            'github_token_valid': github_token_valid,
-            'repos': data
+            'repositories': repositories
         }
 
-        return render(request, 'user/profile.html', context=ctx)
+        return render(request, 'user/remote_repositories.html', context=ctx)
+
+
+class RepositoriesView(LoginRequiredMixin, views.View):
+    def get(self, request):
+        repositories = request.user.repositories.all()
+        ctx = {
+            'repositories': repositories
+        }
+
+        return render(request, 'user/repositories.html', context=ctx)
+
+
+class RepositoryView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        repository = get_object_or_404(Repository, id=kwargs.get('id'))
+        if repository.user != request.user:
+            raise PermissionDenied('You can not access this repository')
+
+        ctx = {
+            'branches': repository.branches.all()
+        }
+        return render(request, 'user/repository.html', context=ctx)
+
+
+# TODO fix it
+class BranchView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        repository = get_object_or_404(Repository, id=kwargs.get('id'))
+        if repository.user != request.user:
+            raise PermissionDenied('You can not access this repository')
+
+        branch = repository.branches.get(name=kwargs.get('branch'))
+        content = branch.content.all()
+        path = kwargs.get('path')
+        if path:
+            path = kwargs.get('path').split('/')
+            content_name = path[-2]
+            path = path[:-2]
+            content = branch.content.all()
+            for directory in path:
+                content = content.get(name=directory)
+
+            content = content.content.get(name=content_name)
+            if content.type == Content.FILE:
+                content = ['Some info']
+            else:
+                content = content.content.all()
+
+        ctx = {
+            'content': content
+        }
+        return render(request, 'user/branch.html', context=ctx)

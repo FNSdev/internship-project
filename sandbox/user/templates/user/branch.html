@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% endblock %}
+
+{% block main %}
+    <ul class="list-group">
+        {% for c in content %}
+            <li class="list-group-item">
+                <p>{{ c }}</p>
+                <p>{{ c.name }}</p>
+                <p>{{ c.get_type_display }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

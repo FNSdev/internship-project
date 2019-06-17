@@ -28,6 +28,13 @@
         </div>
         <div class="col-12 col-md-3 p-3" align="center">
             {% block sidebar_right %}
+                {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages %}
+                        <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             {% endblock %}
         </div>
     </div>
