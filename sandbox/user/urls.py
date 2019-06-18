@@ -13,8 +13,9 @@ urlpatterns = [
     path('github-repositories', GithubRepositoriesView.as_view(), name='github_repositories'),
     path('repositories', RepositoriesView.as_view(), name='repositories'),
     path('repository/<int:id>', RepositoryView.as_view(), name='repository'),
+    path('repository/<int:id>/<str:branch>', BranchView.as_view(), name='branch'),
     re_path(
-        r'^repository/(?P<id>[0-9]+)/branch/(?P<branch>[^/]+)/(?P<path>([^/]+/)*)$',
+        r'^repository/(?P<id>[0-9]+)/(?P<branch>[^/]+)/(?P<path>(.(/)?)*)$',
         BranchView.as_view(),
-        name='branch'),
+        name='branch-content'),
 ]

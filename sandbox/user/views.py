@@ -1,3 +1,4 @@
+import base64
 from django import views
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -9,7 +10,7 @@ from user.forms import RegisterForm, LoginForm
 from user.models import User
 from github_integration.models import Repository, Branch, Content
 from github_integration.utils.token import is_token_valid
-from github_integration.utils.repository import get_repository_list
+from github_integration.utils.repository import get_repository_list, get_blob
 
 
 class RegisterView(views.View):
@@ -122,23 +123,36 @@ class BranchView(LoginRequiredMixin, views.View):
             raise PermissionDenied('You can not access this repository')
 
         branch = repository.branches.get(name=kwargs.get('branch'))
-        content = branch.content.all()
         path = kwargs.get('path')
-        if path:
-            path = kwargs.get('path').split('/')
-            content_name = path[-2]
-            path = path[:-2]
-            content = branch.content.all()
-            for directory in path:
-                content = content.get(name=directory)
+        type_ = 'dir'
 
-            content = content.content.get(name=content_name)
-            if content.type == Content.FILE:
-                content = ['Some info']
+        if path:
+            data = branch
+            path = path.split('/')
+            for p in path:
+                data = get_object_or_404(data.content, name=p)
+
+            if data.type == Content.FILE:
+                type_ = 'file'
+                error, blob = get_blob(request.user.github_token, data.url)
+                if error is None:
+                    text = blob.get('content')
+                    encoding = blob.get('encoding')
+                    if encoding == 'base64':
+                        data = base64.b64decode(text).decode('utf-8')
+                    elif encoding == 'utf-8':
+                        data = text.decode('utf-8')
+                    else:
+                        pass
+                    print(data)
+
             else:
-                content = content.content.all()
+                data = data.content.all()
+        else:
+            data = branch.content.all()
 
         ctx = {
-            'content': content
+            'data': data,
+            'type': type_,
         }
         return render(request, 'user/branch.html', context=ctx)

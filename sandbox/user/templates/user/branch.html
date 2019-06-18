@@ -1,16 +1,40 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
 {% endblock %}
 
 {% block main %}
     <ul class="list-group">
-        {% for c in content %}
-            <li class="list-group-item">
-                <p>{{ c }}</p>
-                <p>{{ c.name }}</p>
-                <p>{{ c.get_type_display }}</p>
-            </li>
-        {% endfor %}
+        {% if type == 'dir' %}
+            {% for content in data %}
+                {% if content.get_type_display == 'dir' %}
+                    <li class="list-group-item list-group-item-warning">
+                        <a href="{{ request.path }}/{{ content.name }}">{{ content.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">
+                        <a href="{{ request.path }}/{{ content.name }}">{{ content.name }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div align="left">
+                <textarea id="code">{{ data }}</textarea>
+            </div>
+        {% endif %}
     </ul>
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'js/codemirror/mode/python/python.js' %}"></script>
+    <script>
+        var code = CodeMirror.fromTextArea(document.getElementById("code"), {
+            lineNumbers: true,
+            mode: 'python',
+            readOnly: 'true',
+            height: 800
+        });
+    </script>
 {% endblock %}
