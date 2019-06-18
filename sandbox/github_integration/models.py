@@ -53,6 +53,29 @@ class Repository(models.Model):
         null=True
     )
 
+    def get_repository_tree(self):
+        branches = []
+        for branch in self.branches.all():
+            content = branch.get_content()
+            branches.append(
+                {
+                    'name': branch.name,
+                    'commit sha': branch.commit_sha,
+                    'url': branch.url,
+                    'content': content
+                }
+            )
+
+        tree = {
+            'name': self.name,
+            'owner': self.user.github_username,
+            'status': self.get_status_display(),
+            'url': self.url,
+            'branches': branches
+        }
+
+        return tree
+
     def __str__(self):
         return self.name
 
@@ -62,6 +85,22 @@ class Branch(models.Model):
     url = models.URLField()
     commit_sha = models.CharField(max_length=50)
     repository = models.ForeignKey(to=Repository, related_name='branches', on_delete=models.CASCADE)
+
+    def get_content(self, content=None):
+        tree = []
+        if content is None:
+            content = self.content.all()
+        for c in content:
+            content_dict = {
+                'name': c.name,
+                'type': c.get_type_display(),
+            }
+
+            if c.type == Content.DIRECTORY:
+                content_dict['content'] = self.get_content(content=c.content.all())
+            tree.append(content_dict)
+
+        return tree
 
     def __str__(self):
         return self.name

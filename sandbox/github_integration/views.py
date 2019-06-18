@@ -3,8 +3,10 @@ from django.shortcuts import reverse
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404
 from github_integration.utils.token import get_login_url, create_token, get_username
 from github_integration.tasks import create_repository_task
+from github_integration.models import Repository
 
 
 class AddRepositoryView(LoginRequiredMixin, views.View):
@@ -38,3 +40,10 @@ class GetGithubTokenView(LoginRequiredMixin, views.View):
 class CreateGithubTokenView(LoginRequiredMixin, views.View):
     def get(self, request):
         return HttpResponseRedirect(get_login_url())
+
+
+class GetRepositoryTreeView(views.View):
+    def get(self, request, **kwargs):
+        id = kwargs.get('id')
+        repository = get_object_or_404(Repository, id=id)
+        return JsonResponse(repository.get_repository_tree())

@@ -115,7 +115,6 @@ class RepositoryView(LoginRequiredMixin, views.View):
         return render(request, 'user/repository.html', context=ctx)
 
 
-# TODO fix it
 class BranchView(LoginRequiredMixin, views.View):
     def get(self, request, **kwargs):
         repository = get_object_or_404(Repository, id=kwargs.get('id'))
