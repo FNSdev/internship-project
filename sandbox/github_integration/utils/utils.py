@@ -1,4 +1,30 @@
 from github_integration.models import Content
+from github_integration.utils.repository import get_repository_tree
+from github_integration.models import Branch
+
+
+def create_branch(user, name, url, repository, commit_sha):
+    new_branch = Branch(
+        name=name,
+        url=url,
+        repository=repository,
+        commit_sha=commit_sha
+    )
+    new_branch.save()
+
+    error, data = get_repository_tree(
+        user.github_token,
+        user.github_username,
+        repository.name,
+        commit_sha
+    )
+
+    if error is None:
+        tree = data.get('tree')
+        parse_tree(tree, branch=new_branch)
+        return new_branch
+    else:
+        return error
 
 
 def parse_tree(subtree, level=1, parent=None, branch=None):

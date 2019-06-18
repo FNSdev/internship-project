@@ -34,10 +34,12 @@ class Content(models.Model):
 class Repository(models.Model):
     UPDATED = 0
     UPDATE_IN_PROGRESS = 1
+    DELETED_ON_GITHUB = 2
 
     STATUSES = (
         (UPDATED, 'updated'),
-        (UPDATE_IN_PROGRESS, 'update_in_progress')
+        (UPDATE_IN_PROGRESS, 'update_in_progress'),
+        (DELETED_ON_GITHUB, 'deleted_on_github'),
     )
 
     name = models.CharField(max_length=150)

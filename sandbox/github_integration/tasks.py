@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 from github_integration.utils.repository import get_repository_info, get_repository_branches, get_repository_tree
-from github_integration.utils.utils import parse_tree
+from github_integration.utils.utils import create_branch, parse_tree
 from github_integration.utils.decorators import Errors
 from github_integration.models import Repository, Branch
 from user.models import User
@@ -34,27 +34,16 @@ def create_repository_task(user_email, repository_name):
                 for br in branches:
                     name = br.get('name')
                     url = '/'.join((repository.url, 'tree', name))
-                    branch = Branch(
-                        name=name,
-                        url=url,
-                        repository=repository,
-                        commit_sha=br.get('commit').get('sha')
+                    branch = create_branch(
+                        user,
+                        br.get('name'),
+                        '/'.join((repository.url, 'tree', name)),
+                        repository,
+                        br.get('commit').get('sha')
                     )
-                    branch.save()
-
-                    error, data = get_repository_tree(
-                        user.github_token,
-                        user.github_username,
-                        repository_name,
-                        branch.commit_sha
-                    )
-                    if error is None:
-                        tree = data.get('tree')
-                        parse_tree(tree, branch=branch)
-                        repository.status = Repository.UPDATED
-                        repository.save()
-                    else:
+                    if branch is None:
                         error_message = f'An error occurred when getting branch {name} content : {error}'
+                        break
             else:
                 error_message = f'An error occurred when getting {repository_name} branches : {error}'
     else:
@@ -62,6 +51,9 @@ def create_repository_task(user_email, repository_name):
 
     if error_message is not None and repository is not None:
         repository.delete()
+    else:
+        repository.status = Repository.UPDATED
+        repository.save()
 
     return error_message
 
@@ -72,6 +64,8 @@ def update_repository_task(user_email, repository_id):
 
     if repository.status == repository.UPDATE_IN_PROGRESS:
         return f'{repository.name} update was in progress already'
+    elif repository.status == repository.DELETED_ON_GITHUB:
+        return f'{repository.name} update was deleted from GitHub'
 
     repository.status = Repository.UPDATE_IN_PROGRESS
     repository.save()
@@ -83,33 +77,51 @@ def update_repository_task(user_email, repository_id):
     if error is None:
         error, branches = get_repository_branches(user.github_token, user.github_username, repository.name)
         if error is None:
+            current_branches_set = set(repository.branches.all())
+            actual_branches_set = set()
             for branch in branches:
-                existing_branch = Branch.objects.get(name=branch.get('name'))
-                if existing_branch.commit_sha != branch.get('commit').get('sha'):
-                    new_branch = Branch(
-                        name=existing_branch.name,
-                        url=existing_branch.url,
-                        repository=repository,
-                        commit_sha=branch.get('commit').get('sha')
-                    )
-                    new_branch.save()
-
-                    error, data = get_repository_tree(
-                        user.github_token,
-                        user.github_username,
-                        repository.name,
-                        branch.get('commit').get('sha')
-                    )
-                    if error is None:
-                        tree = data.get('tree')
-                        parse_tree(tree, branch=new_branch)
-                        existing_branch.delete()
+                commit_sha = branch.get('commit').get('sha')
+                try:
+                    existing_branch = repository.branches.get(name=branch.get('name'))
+                    if existing_branch.commit_sha != commit_sha:
+                        print(f'need to update branch {existing_branch.name}')
+                        new_branch = create_branch(
+                            user,
+                            existing_branch.name,
+                            existing_branch.url,
+                            repository,
+                            commit_sha
+                        )
+                        if new_branch is None:
+                            error_message = f'An error occurred when getting branch {new_branch.name} content : {error}'
+                            break
+                        else:
+                            actual_branches_set.add(new_branch)
                     else:
+                        actual_branches_set.add(existing_branch)
+                except Branch.DoesNotExist:
+                    new_branch = create_branch(
+                        user,
+                        branch.get('name'),
+                        '/'.join((repository.url, 'tree', branch.get('name'))),
+                        repository,
+                        commit_sha
+                    )
+                    if new_branch is None:
                         error_message = f'An error occurred when getting branch {new_branch.name} content : {error}'
+                    else:
+                        actual_branches_set.add(new_branch)
+            if error_message is None:
+                branches_to_remove = current_branches_set.difference(actual_branches_set)
+                for branch in branches_to_remove:
+                    branch.delete()
         else:
             error_message = f'An error occurred when getting {repository.name} branches'
     elif error == Errors.NOT_FOUND:
         error_message = f'Repository {repository.name} was not found. Was it deleted from github?'
+        repository.status = Repository.DELETED_ON_GITHUB
+        repository.save()
+        return error_message
     else:
         error_message = f'An error occurred when updating {repository.name} details : {error}'
 

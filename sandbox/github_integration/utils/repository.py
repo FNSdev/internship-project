@@ -44,3 +44,7 @@ def get_repository_tree(token, user, repository, sha):
     params = urllib.parse.urlencode(params)
     url = f'{url}?{params}'
     return _get_json_response_with_token(token, url)
+
+
+def get_blob(token, url):
+    return _get_json_response_with_token(token, url)
