@@ -33,7 +33,6 @@ def create_repository_task(user_email, repository_name):
             if error is None:
                 for br in branches:
                     name = br.get('name')
-                    url = '/'.join((repository.url, 'tree', name))
                     branch = create_branch(
                         user,
                         br.get('name'),
@@ -65,7 +64,7 @@ def update_repository_task(user_email, repository_id):
     if repository.status == repository.UPDATE_IN_PROGRESS:
         return f'{repository.name} update was in progress already'
     elif repository.status == repository.DELETED_ON_GITHUB:
-        return f'{repository.name} update was deleted from GitHub'
+        return f'{repository.name} was deleted from GitHub'
 
     repository.status = Repository.UPDATE_IN_PROGRESS
     repository.save()

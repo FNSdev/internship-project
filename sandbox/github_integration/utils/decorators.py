@@ -22,10 +22,10 @@ def safe_request(func):
             elif isinstance(data, dict) and data.get('error'):
                 return Errors.ERROR_IN_RESPONSE, None
             return None, data
-        except ConnectionError:
-            return Errors.CONNECTION_ERROR, None
         except ConnectTimeout:
             return Errors.CONNECTION_TIMEOUT, None
+        except ConnectionError:
+            return Errors.CONNECTION_ERROR, None
         except RequestException:
             return Errors.UNKNOWN_ERROR, None
 
