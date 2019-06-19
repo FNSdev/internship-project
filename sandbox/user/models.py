@@ -26,7 +26,9 @@ class User(AbstractUser):
     )
     phone_number = models.CharField(max_length=13, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
+
     github_token = models.CharField(max_length=50, blank=True)
+    github_username = models.CharField(max_length=150, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

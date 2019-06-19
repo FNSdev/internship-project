@@ -4,15 +4,24 @@
     Profile
 {% endblock %}
 
+{% block sidebar_left %}
+    <ul class="list-group">
+        <li class="list-group-item">
+            <a href="{% url 'user:repositories' %}">Your Repositories</a>
+        </li>
+        <li class="list-group-item">
+            <a href="{% url 'user:github_repositories' %}">GitHub Repositories</a>
+        </li>
+    </ul>
+{% endblock %}
+
 
 {% block main %}
     <h1>Your Profile</h1>
-
     {% if github_token_valid %}
         <h3>Your github token is valid</h3>
     {% else %}
         <h3>Please, add github token</h3>
-        <a href="{% url 'user:create_github_token' %}" class="btn btn-primary">Login in GitHub</a>
+        <a href="{% url 'github_integration:create_github_token' %}" class="btn btn-primary">Login in GitHub</a>
     {% endif %}
-
 {% endblock %}

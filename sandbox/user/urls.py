@@ -1,5 +1,6 @@
-from django.urls import path
-from user.views import RegisterView, LoginView, ProfileView, GetGithubTokenView, CreateGithubTokenView
+from django.urls import path, re_path
+from user.views import RegisterView, LoginView, ProfileView, GithubRepositoriesView, RepositoriesView, \
+    RepositoryView, BranchView
 from django.contrib.auth.views import LogoutView
 
 
@@ -9,6 +10,12 @@ urlpatterns = [
     path('login', LoginView.as_view(), name='login'),
     path('logout', LogoutView.as_view(), name='logout'),
     path('profile', ProfileView.as_view(), name='profile'),
-    path('get-github-token', GetGithubTokenView.as_view(), name='get_github_token'),
-    path('create-github-token', CreateGithubTokenView.as_view(), name='create_github_token'),
+    path('github-repositories', GithubRepositoriesView.as_view(), name='github_repositories'),
+    path('repositories', RepositoriesView.as_view(), name='repositories'),
+    path('repository/<int:id>', RepositoryView.as_view(), name='repository'),
+    path('repository/<int:id>/<str:branch>', BranchView.as_view(), name='branch'),
+    re_path(
+        r'^repository/(?P<id>[0-9]+)/(?P<branch>[^/]+)/(?P<path>(.(/)?)*)$',
+        BranchView.as_view(),
+        name='branch_content'),
 ]

@@ -17,10 +17,12 @@ from django.contrib import admin
 from django.urls import path, include
 import core.urls
 import user.urls
+import github_integration.urls
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include(user.urls, namespace='user')),
+    path('github-integration/', include(github_integration.urls, namespace='github_integration')),
     path('', include(core.urls, namespace='core')),
 ]
