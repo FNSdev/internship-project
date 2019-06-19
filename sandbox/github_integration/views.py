@@ -7,13 +7,27 @@ from django.shortcuts import get_object_or_404
 from github_integration.utils.token import get_login_url, create_token, get_username
 from github_integration.tasks import create_repository_task
 from github_integration.models import Repository
+from celery.result import AsyncResult
 
 
 class AddRepositoryView(LoginRequiredMixin, views.View):
     def post(self, request):
         repository_name = request.POST.get('repository')
-        create_repository_task.delay(request.user.email, repository_name)
-        return JsonResponse({'message': 'Task in queue'})
+        task = create_repository_task.delay(request.user.email, repository_name)
+        return JsonResponse({'message': 'Task in queue', 'task_id': task.id})
+
+
+class GetTaskStatusView(LoginRequiredMixin, views.View):
+    def get(self, request):
+        task_id = request.GET.get('task_id')
+        task = AsyncResult(task_id)
+        if task.ready():
+            message = task.get()
+            if message is None:
+                message = 'Success!'
+            print(message)
+            return JsonResponse({'status': 'ready', 'message': message})
+        return JsonResponse({'status': 'not-ready'})
 
 
 class GetGithubTokenView(LoginRequiredMixin, views.View):

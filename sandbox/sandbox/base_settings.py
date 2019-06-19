@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -113,10 +114,10 @@ GITHUB_USERS_URL = 'https://api.github.com/users'
 GITHUB_USER_URL = 'https://api.github.com/user'
 
 # Celery
-
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_BEAT_SCHEDULE = {
     'update_repositories': {
         'task': 'github_integration.tasks.update_repositories_task',
-        'schedule': 15,
+        'schedule': 60,
     }
 }

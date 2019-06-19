@@ -17,5 +17,5 @@ urlpatterns = [
     re_path(
         r'^repository/(?P<id>[0-9]+)/(?P<branch>[^/]+)/(?P<path>(.(/)?)*)$',
         BranchView.as_view(),
-        name='branch-content'),
+        name='branch_content'),
 ]

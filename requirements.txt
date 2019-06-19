@@ -4,3 +4,4 @@ django-crispy-forms
 requests
 celery[redis]
 django-celery-beat
+django-celery-results

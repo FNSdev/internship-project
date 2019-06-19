@@ -38,6 +38,25 @@
                 },
                 success: function(response) {
                     alert(response['message'])
+                    var get_task_result = function () {
+                        jQuery.ajax ({
+                            type: 'GET',
+                            url: "{% url 'github_integration:get_task_status' %}",
+                            data: {
+                                task_id: response['task_id']
+                            },
+                            success: function (response) {
+                                if (response['status'] == 'ready') {
+                                    alert(response['message'])
+                                }
+                                else {
+                                    setTimeout(get_task_result, 2 * 1000)
+                                }
+
+                            }
+                        })
+                    }
+                    get_task_result()
                 }
             })
         })

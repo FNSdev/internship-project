@@ -30,11 +30,10 @@
 {% block extrajs %}
     <script src="{% static 'js/codemirror/mode/python/python.js' %}"></script>
     <script>
-        var code = CodeMirror.fromTextArea(document.getElementById("code"), {
+        CodeMirror.fromTextArea(document.getElementById("code"), {
             lineNumbers: true,
             mode: 'python',
             readOnly: 'true',
-            height: 800
         });
     </script>
 {% endblock %}
