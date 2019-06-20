@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    My Projects
+{% endblock %}
+
+{% block main %}
+    <h3>Projects that I created</h3>
+    <div id="owned-projects">
+        {% for project in owned_projects %}
+        <div class="card mt-3" style="width: 18rem;">
+            <h5 class="card-header">
+                <a>{{ project.name }}</a>
+            </h5>
+            <div class="card-body">
+                <p class="card-text">{{ project.description }}</p>
+                <a href="{{ project.repository.url }}" class="card-link">View on GitHub</a>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+ {% endblock %}
+
+{% block sidebar_left %}
+    <h3>Projects that I am participating in</h3>
+    {% for project in participating_projects %}
+        <div class="card mt-3" style="width: 18rem;">
+            <h5 class="card-header">
+                <a>{{ project.name }}</a>
+            </h5>
+            <div class="card-body">
+                <p class="card-text">{{ project.description }}</p>
+                <a href="{{ project.repository.url }}" class="card-link">View on GitHub</a>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block sidebar_right %}
+    <h3>Create new project</h3>
+    <div>
+        <form id="create-project-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button class="btn btn-success mt-3">
+                Create Project
+            </button>
+        </form>
+    </div>
+    <div class="mt-3" id="create-project-errors"></div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        jQuery(document).on('submit', '#create-project-form', function (e) {
+            e.preventDefault()
+            var jq = jQuery.noConflict()
+            var form = jQuery(this)
+            var errors_div = document.getElementById('create-project-errors')
+            errors_div.innerText = ''
+            jQuery.ajax({
+                type: 'POST',
+                url: "{% url 'core:projects' %}",
+                data: form.serialize(),
+                success: function (response) {
+                    alert(response['message'])
+                    jQuery('#owned-projects').append('<div class="card mt-3" style="width: 18rem;">' +
+                        '<h5 class="card-header">\n' +
+                        '<a>' + response['project_name'] + '</a>' +
+                        '</h5>' +
+                        '<div class="card-body">\n' +
+                        '<p class="card-text">' + response['project_description'] + '</p>' +
+                        '<a href="' + response['github_url'] + '" class="card-link">View on GitHub</a>' +
+                        '</div>' +
+                        '</div>')
+                },
+                error: function (response) {
+                    response = response['responseJSON']
+                    alert(response['message'])
+                    let errors = response['errors']
+                    for(let field in errors) {
+                        let messages = []
+                        for (let i in errors[field]) {
+                            messages.push(errors[field][i]['message'])
+                            jQuery('#create-project-errors').append('<span class="badge badge-danger">' + field +
+                                ' : ' + messages[i] + '</span>')
+                        }
+                    }
+                }
+            })
+        })
+    </script>
+{% endblock %}
