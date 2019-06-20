@@ -136,4 +136,4 @@ def update_repositories_task():
     for user in users:
         repositories = user.repositories.all()
         for repository in repositories:
-            update_repository_task.delay(user.email, repository.id)
+            update_repository_task.delay(user.email, repository.id).forget()

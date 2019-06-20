@@ -30,7 +30,6 @@ class Content(models.Model):
         return self.name
 
 
-# TODO make user field not nullable
 class Repository(models.Model):
     UPDATED = 0
     UPDATE_IN_PROGRESS = 1
@@ -50,7 +49,6 @@ class Repository(models.Model):
         to='user.User',
         on_delete=models.CASCADE,
         related_name='repositories',
-        null=True
     )
 
     def get_repository_tree(self):
