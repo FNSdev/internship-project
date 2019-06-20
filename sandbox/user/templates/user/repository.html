@@ -8,7 +8,7 @@
         {% for branch in branches %}
             <li class="list-group-item">
                 <p>
-                    <a href="{% url 'user:branch' id=branch.repository.id branch=branch.name %}">{{ branch.name }}</a>
+                    <a href="{% url 'user:branch' id=branch.repository.id commit_sha=branch.commit_sha %}">{{ branch.name }}</a>
                 </p>
                 <p>{{ branch.commit_sha }}</p>
             </li>

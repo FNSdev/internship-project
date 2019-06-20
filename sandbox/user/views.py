@@ -121,7 +121,7 @@ class BranchView(LoginRequiredMixin, views.View):
         if repository.user != request.user:
             raise PermissionDenied('You can not access this repository')
 
-        branch = repository.branches.get(name=kwargs.get('branch'))
+        branch = repository.branches.get(repository=repository, commit_sha=kwargs.get('commit_sha'))
         path = kwargs.get('path')
         type_ = 'dir'
 
