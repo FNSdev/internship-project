@@ -16,6 +16,30 @@
             {% block title %} Index Page {% endblock %}
         </title>
 </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{% url 'core:index' %}">Sandbox</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                {% if user.is_authenticated %}
+                    <a class="nav-link" href="{% url 'user:profile' %}">My Profile</a>
+                    <a class="nav-link" href="{% url 'github_integration:repositories' %}">My Repositories</a>
+                    <a class="nav-link" href="{% url 'core:projects' %}">My Projects</a>
+                    <a class="nav-link" href="{% url 'user:logout' %}?next={{request.get_full_path|urlencode}}">Logout</a>
+                {% else %}
+                    <a class="nav-link" href="{% url 'user:login' %}?next={{request.get_full_path|urlencode}}">Login</a>
+                {% endif %}
+            </ul>
+        </div>
+    </ul>
+  </div>
+</nav>
+
+</body>
 
 <div class="container-fluid my-3">
     <div class="row">
