@@ -1,6 +1,7 @@
-from django.urls import path
+from django.urls import path, re_path
 from github_integration.views import AddRepositoryView, GetGithubTokenView, CreateGithubTokenView, \
-    GetRepositoryTreeView, GetTaskStatusView
+    GetRepositoryTreeView, GetTaskStatusView, GithubRepositoriesView, RepositoriesView, \
+    RepositoryView, BranchView
 
 
 app_name = 'github_integration'
@@ -10,4 +11,12 @@ urlpatterns = [
     path('create-github-token', CreateGithubTokenView.as_view(), name='create_github_token'),
     path('get-repository-tree/<int:id>', GetRepositoryTreeView.as_view(), name='get_repository_tree'),
     path('get-task-status', GetTaskStatusView.as_view(), name='get_task_status'),
+    path('github-repositories', GithubRepositoriesView.as_view(), name='github_repositories'),
+    path('repositories', RepositoriesView.as_view(), name='repositories'),
+    path('repository/<int:id>', RepositoryView.as_view(), name='repository'),
+    path('repository/<int:id>/<str:commit_sha>', BranchView.as_view(), name='branch'),
+    re_path(
+        r'^repository/(?P<id>[0-9]+)/(?P<commit_sha>[a-z 0-9]+)/(?P<path>(.(/)?)*)$',
+        BranchView.as_view(),
+        name='branch_content'),
 ]

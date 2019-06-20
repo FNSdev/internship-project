@@ -21,7 +21,7 @@
                             <a href="{{ repo.url }}" class="card-link">View on GitHub</a>
                         </p>
                         <p>
-                            <a href="{% url 'user:repository' id=repo.id %}" class="btn btn-success add">View content</a>
+                            <a href="{% url 'github_integration:repository' id=repo.id %}" class="btn btn-success add">View content</a>
                         </p>
                      </div>
                 </div>
