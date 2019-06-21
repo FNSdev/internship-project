@@ -154,6 +154,30 @@ class InviteUserView(LoginRequiredMixin, views.View):
             return JsonResponse(response, status=400)
 
 
+class RemoveUserView(LoginRequiredMixin, views.View):
+    def post(self, request, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+
+        project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+        user_to_remove = get_object_or_404(project.team.all(), email=kwargs['email'])
+
+        if user_to_remove == project.owner:
+            return JsonResponse({'message': 'You can not remove yourself', 'status': 'error'})
+
+        project.team.remove(user_to_remove)
+        project.save()
+
+        try:
+            invite = Invite.objects.get(to__email=kwargs['email'], project=project)
+            invite.delete()
+        except Invite.DoesNotExist:
+            pass
+
+        return JsonResponse({'message': 'Success', 'status': 'ok'})
+
+
 class InvitesView(LoginRequiredMixin, views.View):
     def get(self, request):
         user = request.user

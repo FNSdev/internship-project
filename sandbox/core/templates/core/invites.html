@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
     Invites
 {% endblock %}
@@ -37,51 +39,7 @@
 {% endblock %}
 
 {% block extrajs %}
-    <script>
-        jQuery(document).on('click', '.cancel', function (e) {
-            var jq = jQuery.noConflict()
-            var invite_id = jQuery(e.target).parent().parent().prop('id')
-            jQuery.ajax({
-                type: 'POST',
-                url: "{{ request.get_full_path }}/cancel/" + invite_id,
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response){
-                    alert(response['message'])
-                    jQuery(e.target).parent().parent().remove()
-                }
-            })
-        })
-        jQuery(document).on('click', '.accept', function (e) {
-            var jq = jQuery.noConflict()
-            var invite_id = jQuery(e.target).parent().prop('id')
-            jQuery.ajax({
-                type: 'POST',
-                url: "{{ request.get_full_path }}/accept/" + invite_id,
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response){
-                    alert(response['message'])
-                    jQuery(e.target).parent().siblings('.status').text('Status: accepted')
-                }
-            })
-        })
-        jQuery(document).on('click', '.decline', function (e) {
-            var jq = jQuery.noConflict()
-            var invite_id = jQuery(e.target).parent().prop('id')
-            jQuery.ajax({
-                type: 'POST',
-                url: "{{ request.get_full_path }}/decline/" + invite_id,
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response){
-                    alert(response['message'])
-                    jQuery(e.target).parent().siblings('.status').text('Status: declined')
-                }
-            })
-        })
-    </script>
+    <script type="module" src="{% static 'js/core/invites/cancel_invite.js' %}"></script>
+    <script type="module" src="{% static 'js/core/invites/accept_invite.js' %}"></script>
+    <script type="module" src="{% static 'js/core/invites/decline_invite.js' %}"></script>
 {% endblock %}

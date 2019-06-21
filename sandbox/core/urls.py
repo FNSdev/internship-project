@@ -1,6 +1,6 @@
 from django.urls import path
 from core.views import IndexView, ProjectsView, ProjectView, ProjectSettingsView, InviteUserView, \
-    InvitesView, CancelInviteView, AcceptInviteView, DeclineInviteView
+    InvitesView, CancelInviteView, AcceptInviteView, DeclineInviteView, RemoveUserView
 
 
 app_name = 'core'
@@ -13,5 +13,6 @@ urlpatterns = [
     path('projects', ProjectsView.as_view(), name='projects'),
     path('projects/<str:user>/<str:name>', ProjectView.as_view(), name='project'),
     path('projects/<str:user>/<str:name>/settings', ProjectSettingsView.as_view(), name='project_settings'),
-    path('projects/<str:user>/<str:name>/settings/invite', InviteUserView.as_view(), name='invite'),
+    path('projects/<str:user>/<str:name>/settings/invite-user', InviteUserView.as_view(), name='invite'),
+    path('projects/<str:user>/<str:name>/settings/remove-user/<str:email>', RemoveUserView.as_view(), name='invite')
 ]
