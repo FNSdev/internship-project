@@ -5,7 +5,7 @@
 {% load crispy_forms_tags %}
 
 {% block title %}
-    Settings
+    {{ project.name }} Settings
 {% endblock %}
 
 {% block sidebar_left %}
@@ -14,7 +14,7 @@
         <div class="card mt-3" id="{{ user.email }}">
             <div class="card-body">
                 <h4>{{ user.email }}</h4>
-                <btn class="btn btn-danger remove">Remove from team</btn>
+                <button class="btn btn-danger remove">Remove from team</button>
                 <p class="card-subtitle mb-2 text-muted mt-1">(and cancel invitation)</p>
             </div>
         </div>
@@ -32,12 +32,52 @@
 {% endblock %}
 
 {% block main %}
+    <h3>Tasks</h3>
+
+    <style>
+        td {
+            text-align: center
+        }
+
+        th {
+            text-align: center
+        }
+    </style>
+
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Status</th>
+                <th scope="col">Deadline</th>
+            </tr>
+        </thead>
+        <tbody id="tasks">
+            {% for task in tasks %}
+                <tr>
+                    <td>{{ task.name }}</td>
+                    <td>{{ task.get_priority_display }}</td>
+                    <td>{{ task.get_status_display }}</td>
+                    <td>{{ task.deadline }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+</table>
+
 {% endblock %}
 
 {% block sidebar_right %}
+    <h3>Create Task</h3>
+    <form id="create-task-form">
+        {{ task_form|crispy }}
+        <button class="btn btn-success mt-3">Add Task</button>
+    </form>
+    <div class="mt-3" id="create-task-errors"></div>
 {% endblock %}
 
 {% block extrajs %}
     <script type="module" src="{% static 'js/core/projects/invite_user_to_project.js' %}"></script>
     <script type="module" src="{% static 'js/core/projects/remove_user_from_team.js' %}"></script>
+    <script type="module" src="{% static 'js/core/projects/create_task.js' %}"></script>
 {% endblock %}

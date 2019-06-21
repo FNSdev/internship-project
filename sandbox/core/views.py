@@ -4,8 +4,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import PermissionDenied
-from core.forms import ProjectForm, InviteUserForm
-from core.models import Project, Invite
+from core.forms import ProjectForm, InviteUserForm, TaskForm
+from core.models import Project, Task, Invite
 from user.models import User
 import json
 
@@ -107,12 +107,57 @@ class ProjectSettingsView(LoginRequiredMixin, views.View):
         project_owner = kwargs['user']
 
         project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+        task_form = TaskForm()
+        task_form.fields['assignees'].queryset = project.team.all()
+
+        tasks = project.tasks.all()
 
         ctx = {
             'project': project,
-            'invite_user_form': InviteUserForm()
+            'invite_user_form': InviteUserForm(),
+            'task_form': task_form,
+            'tasks': tasks
         }
         return HttpResponse(render(request, 'core/project_settings.html', context=ctx))
+
+
+class CreateTaskView(LoginRequiredMixin, views.View):
+    def post(self, request, **kwargs):
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            user = request.user
+            project_name = kwargs['name']
+            project_owner = kwargs['user']
+            project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+
+            task = Task(
+                name=data['name'],
+                project=project,
+                priority=data['priority'],
+                status=data['status'],
+                description=data['description'],
+                deadline=data['deadline'],
+            )
+
+            task.save()
+            task.assignees.add(*data['assignees'])
+            task.save()
+
+            return JsonResponse({
+                'message': 'Success',
+                'name': task.name,
+                'priority': task.get_priority_display(),
+                'status': task.get_status_display(),
+                'deadline': task.deadline,
+            })
+        else:
+            data = form.errors.as_json()
+            response = {
+                'message': 'Error',
+                'errors': json.loads(data)
+            }
+            return JsonResponse(response, status=400)
 
 
 class InviteUserView(LoginRequiredMixin, views.View):

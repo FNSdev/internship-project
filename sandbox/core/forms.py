@@ -1,5 +1,5 @@
 from django import forms
-from core.models import Project
+from core.models import Project, Task
 
 
 class ProjectForm(forms.ModelForm):
@@ -11,3 +11,16 @@ class ProjectForm(forms.ModelForm):
 class InviteUserForm(forms.Form):
     email = forms.EmailField()
     message = forms.CharField(max_length=150)
+
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ('name', 'description', 'priority', 'status', 'assignees', 'deadline')
+
+    deadline = forms.DateField(
+        widget=forms.TextInput(
+            attrs={'type': 'date'}
+        ),
+        required=False
+    )
