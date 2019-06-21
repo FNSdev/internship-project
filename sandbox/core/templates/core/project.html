@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ project.name }}
+{% endblock %}
+
+{% block sidebar_left %}
+<div class="card" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">{{ project.name }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">{{ project.owner }}</h6>
+        <p class="card-text">{{ project.description }}</p>
+        <p><a href="{% url 'github_integration:repository' id=project.repository.id %}" class="card-link">Repository</a></p>
+        {% if is_owner %}
+            <p><a href="{{ request.path }}/settings" class="card-link">Settings</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block main %}
+{% endblock %}
+
+{% block sidebar_right %}
+{% endblock %}
+
+{% block extrajs %}
+{% endblock %}

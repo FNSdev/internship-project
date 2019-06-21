@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect, JsonResponse
+from core.models import Project
 from github_integration.utils.token import get_login_url, create_token, get_username
 from github_integration.utils.repository import get_repository_list, get_blob
 from github_integration.tasks import create_repository_task
@@ -102,7 +103,12 @@ class RepositoryView(LoginRequiredMixin, views.View):
     def get(self, request, **kwargs):
         repository = get_object_or_404(Repository, id=kwargs.get('id'))
         if repository.user != request.user:
-            raise PermissionDenied('You can not access this repository')
+            try:
+                project = repository.project
+                if not project.team.filter(email=request.user.email):
+                    raise PermissionDenied('You can not access this repository')
+            except Project.DoesNotExist:
+                raise PermissionDenied('You can not access this repository')
 
         ctx = {
             'branches': repository.branches.all()
@@ -114,7 +120,12 @@ class BranchView(LoginRequiredMixin, views.View):
     def get(self, request, **kwargs):
         repository = get_object_or_404(Repository, id=kwargs.get('id'))
         if repository.user != request.user:
-            raise PermissionDenied('You can not access this repository')
+            try:
+                project = repository.project
+                if not project.team.filter(email=request.user.email):
+                    raise PermissionDenied('You can not access this repository')
+            except Project.DoesNotExist:
+                raise PermissionDenied('You can not access this repository')
 
         branch = repository.branches.get(repository=repository, commit_sha=kwargs.get('commit_sha'))
         path = kwargs.get('path')
@@ -138,8 +149,6 @@ class BranchView(LoginRequiredMixin, views.View):
                         data = text.decode('utf-8')
                     else:
                         pass
-                    print(data)
-
             else:
                 data = data.content.all()
         else:

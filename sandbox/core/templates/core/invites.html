@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Invites
+{% endblock %}
+
+{% block main %}
+    {% for invite in received_invites %}
+        <div class="card mt-3" style="width: 18rem;">
+            <h5 class="card-header">
+            {{ invite.project.name }}
+            </h5>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Owner: {{ invite.project.owner }}</h6>
+                <p class="card-text">{{ invite.project.description }}</p>
+                <p class="card-text status">Status: {{ invite.get_status_display }}</p>
+                <div id="{{ invite.id }}">
+                    <btn class="btn btn-success accept">Accept</btn>
+                    <btn class="btn btn-danger decline">Decline</btn>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block sidebar_left %}
+    {% for invite in sent_invites %}
+        <div id="{{ invite.id }}" class="card mt-3" style="width: 18rem;">
+            <div class="card-body">
+                <h5 class="card-title">{{ invite.project.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">Sent to: {{ invite.to }}</h6>
+                <p class="card-text">Status: {{ invite.get_status_display }}</p>
+                <btn class="btn btn-danger cancel">Cancel</btn>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        jQuery(document).on('click', '.cancel', function (e) {
+            var jq = jQuery.noConflict()
+            var invite_id = jQuery(e.target).parent().parent().prop('id')
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ request.get_full_path }}/cancel/" + invite_id,
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response){
+                    alert(response['message'])
+                    jQuery(e.target).parent().parent().remove()
+                }
+            })
+        })
+        jQuery(document).on('click', '.accept', function (e) {
+            var jq = jQuery.noConflict()
+            var invite_id = jQuery(e.target).parent().prop('id')
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ request.get_full_path }}/accept/" + invite_id,
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response){
+                    alert(response['message'])
+                    jQuery(e.target).parent().siblings('.status').text('Status: accepted')
+                }
+            })
+        })
+        jQuery(document).on('click', '.decline', function (e) {
+            var jq = jQuery.noConflict()
+            var invite_id = jQuery(e.target).parent().prop('id')
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ request.get_full_path }}/decline/" + invite_id,
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response){
+                    alert(response['message'])
+                    jQuery(e.target).parent().siblings('.status').text('Status: declined')
+                }
+            })
+        })
+    </script>
+{% endblock %}

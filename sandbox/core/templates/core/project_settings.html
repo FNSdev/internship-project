@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}
+    Settings
+{% endblock %}
+
+{% block sidebar_left %}
+    <h3>Team</h3>
+    {% for user in project.team.all %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <h4>{{ user.email }}</h4>
+            </div>
+        </div>
+    {% endfor %}
+    <div class="mt-3">
+        <form id="invite-user-form">
+            {% csrf_token %}
+            {{ invite_user_form|crispy }}
+            <button class="btn btn-success mt-3">
+                Invite
+            </button>
+        </form>
+    </div>
+    <div class="mt-3" id="invite-user-errors"></div>
+{% endblock %}
+
+{% block main %}
+{% endblock %}
+
+{% block sidebar_right %}
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        jQuery(document).on('submit', '#invite-user-form', function (e) {
+            e.preventDefault()
+            var jq = jQuery.noConflict()
+            var form = jQuery(this)
+            var errors_div = document.getElementById('invite-user-errors')
+            errors_div.innerText = ''
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ request.get_full_path }}/invite",
+                data: form.serialize(),
+                success: function (response) {
+                    alert(response['message'])
+                },
+                error: function (response) {
+                    response = response['responseJSON']
+                    alert(response['message'])
+                    let errors = response['errors']
+                    for(let field in errors) {
+                        let messages = []
+                        for (let i in errors[field]) {
+                            messages.push(errors[field][i]['message'])
+                            jQuery('#invite-user-errors').append('<p><span class="badge badge-danger">' + field +
+                                ' : ' + messages[i] + '</span></p>')
+                        }
+                    }
+                }
+            })
+        })
+    </script>
+{% endblock %}

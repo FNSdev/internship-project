@@ -9,31 +9,15 @@
     <h3>Projects that I created</h3>
     <div id="owned-projects">
         {% for project in owned_projects %}
-        <div class="card mt-3" style="width: 18rem;">
-            <h5 class="card-header">
-                <a>{{ project.name }}</a>
-            </h5>
-            <div class="card-body">
-                <p class="card-text">{{ project.description }}</p>
-                <a href="{{ project.repository.url }}" class="card-link">View on GitHub</a>
-            </div>
-        </div>
-    {% endfor %}
+            {% include 'core/includes/project_card.html' %}
+        {% endfor %}
     </div>
  {% endblock %}
 
 {% block sidebar_left %}
     <h3>Projects that I am participating in</h3>
     {% for project in participating_projects %}
-        <div class="card mt-3" style="width: 18rem;">
-            <h5 class="card-header">
-                <a>{{ project.name }}</a>
-            </h5>
-            <div class="card-body">
-                <p class="card-text">{{ project.description }}</p>
-                <a href="{{ project.repository.url }}" class="card-link">View on GitHub</a>
-            </div>
-        </div>
+        {% include 'core/includes/project_card.html' %}
     {% endfor %}
 {% endblock %}
 
@@ -67,7 +51,7 @@
                     alert(response['message'])
                     jQuery('#owned-projects').append('<div class="card mt-3" style="width: 18rem;">' +
                         '<h5 class="card-header">\n' +
-                        '<a>' + response['project_name'] + '</a>' +
+                        '<a href=' + response['project_url'] + '>' + response['project_name'] + '</a>' +
                         '</h5>' +
                         '<div class="card-body">\n' +
                         '<p class="card-text">' + response['project_description'] + '</p>' +
@@ -83,8 +67,8 @@
                         let messages = []
                         for (let i in errors[field]) {
                             messages.push(errors[field][i]['message'])
-                            jQuery('#create-project-errors').append('<span class="badge badge-danger">' + field +
-                                ' : ' + messages[i] + '</span>')
+                            jQuery('#create-project-errors').append('<p><span class="badge badge-danger">' + field +
+                                ' : ' + messages[i] + '</span></p>')
                         }
                     }
                 }
