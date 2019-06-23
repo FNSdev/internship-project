@@ -28,6 +28,7 @@
 {% endblock %}
 
 {% block extrajs %}
+    <script src="{% static 'js/codemirror/codemirror.js' %}"></script>
     <script src="{% static 'js/codemirror/mode/python/python.js' %}"></script>
     <script>
         CodeMirror.fromTextArea(document.getElementById("code"), {

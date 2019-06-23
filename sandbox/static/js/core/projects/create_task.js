@@ -20,13 +20,6 @@ jQuery(document).on('submit', '#create-task-form', function (e) {
         data: form.serialize(),
         success: function (response) {
             alert(response['message'])
-            jQuery('#tasks').append('<tr>' +
-                '<td>' + response['name'] + '</td>' +
-                '<td>0 %</td>' +
-                '<td>' + response['priority'] + '</td>' +
-                '<td>' + response['status'] + '</td>' +
-                '<td>' + response['deadline'] + '</td>' +
-                '</tr>')
         },
         error: function (response) {
             response = response['responseJSON'];

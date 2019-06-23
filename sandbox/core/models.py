@@ -78,8 +78,20 @@ class Task(models.Model):
     priority = models.IntegerField(choices=PRIORITIES, default=MEDIUM)
     status = models.IntegerField(choices=STATUSES, default=PENDING)
 
+    class Meta:
+        ordering = ['-priority', 'deadline', 'status']
+
     def __str__(self):
         return f'{self.project.name} / tasks / {self.name}'
+
+    def get_progress(self):
+        if self.status == self.COMPLETED:
+            return 100
+        top_level_sub_tasks_count = self.sub_tasks.count()
+        if top_level_sub_tasks_count == 0:
+            return 0
+        completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED)
+        return round((completed_sub_tasks_count / top_level_sub_tasks_count) * 100, 2)
 
 
 class Invite(models.Model):

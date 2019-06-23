@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from core.forms import ProjectForm, InviteUserForm, TaskForm
 from core.models import Project, Task, Invite
 from user.models import User
@@ -110,15 +111,36 @@ class ProjectSettingsView(LoginRequiredMixin, views.View):
         task_form = TaskForm()
         task_form.fields['assignees'].queryset = project.team.all()
 
-        tasks = project.tasks.all()
-
         ctx = {
             'project': project,
             'invite_user_form': InviteUserForm(),
             'task_form': task_form,
-            'tasks': tasks
         }
         return HttpResponse(render(request, 'core/project_settings.html', context=ctx))
+
+
+class GetTasksView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+        project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+
+        count = request.GET.get('count')
+        p = Paginator(project.tasks.all(), count)
+        page = p.page(1)
+
+        response = {'tasks': []}
+        for task in page.object_list:
+            response['tasks'].append({
+                'name': task.name,
+                'status': task.get_status_display(),
+                'priority': task.get_priority_display(),
+                'progress': task.get_progress(),
+                'deadline': task.deadline
+            })
+
+        return JsonResponse(response)
 
 
 class CreateTaskView(LoginRequiredMixin, views.View):
