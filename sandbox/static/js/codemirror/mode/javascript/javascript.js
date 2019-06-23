@@ -3,9 +3,9 @@
 
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
-    mod(require("../../lib/codemirror"));
+    mod(require("../.."));
   else if (typeof define == "function" && define.amd) // AMD
-    define(["../../lib/codemirror"], mod);
+    define(["../.."], mod);
   else // Plain browser env
     mod(CodeMirror);
 })(function(CodeMirror) {
@@ -525,7 +525,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       cx.marked = "keyword"
       return cont(objprop)
     } else if (type == "[") {
-      return cont(expression, maybetype, expect("]"), afterprop);
+      return cont(expression, maybetypeOrIn, expect("]"), afterprop);
     } else if (type == "spread") {
       return cont(expressionNoComma, afterprop);
     } else if (value == "*") {
@@ -574,9 +574,12 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   }
   function maybetype(type, value) {
     if (isTS) {
-      if (type == ":" || value == "in") return cont(typeexpr);
+      if (type == ":") return cont(typeexpr);
       if (value == "?") return cont(maybetype);
     }
+  }
+  function maybetypeOrIn(type, value) {
+    if (isTS && (type == ":" || value == "in")) return cont(typeexpr)
   }
   function mayberettype(type) {
     if (isTS && type == ":") {
