@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class Project(models.Model):
@@ -17,6 +18,9 @@ class Project(models.Model):
     )
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+    public = models.BooleanField(default=False)
+    auto_sync_with_github = models.BooleanField(default=False)
+    tasks_count = models.PositiveIntegerField(default=0)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -38,6 +42,9 @@ class Task(models.Model):
     IN_REVIEW = 2
     COMPLETED = 3
 
+    TASK = 0
+    SUB_TASK = 1
+
     PRIORITIES = (
         (LOW, 'low'),
         (MEDIUM, 'medium'),
@@ -49,7 +56,12 @@ class Task(models.Model):
         (PENDING, 'pending'),
         (IN_PROGRESS, 'in progress'),
         (IN_REVIEW, 'in review'),
-        (COMPLETED, 'completed')
+        (COMPLETED, 'completed'),
+    )
+
+    TYPES = (
+        (TASK, 'task'),
+        (SUB_TASK, 'sub_task'),
     )
 
     project = models.ForeignKey(
@@ -77,21 +89,40 @@ class Task(models.Model):
     deadline = models.DateField(blank=True, null=True)
     priority = models.IntegerField(choices=PRIORITIES, default=MEDIUM)
     status = models.IntegerField(choices=STATUSES, default=PENDING)
+    task_type = models.IntegerField(choices=TYPES, default=TASK)
+    task_id = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ['-priority', 'deadline', 'status']
 
     def __str__(self):
-        return f'{self.project.name} / tasks / {self.name}'
+        return f'{self.project.name} / task_{self.task_id} : {self.name}'
+
+    def save(self, *args, **kwargs):
+        if self.task_type == self.SUB_TASK and self.sub_tasks.count() != 0:
+            raise ValidationError('Sub Tasks can not have sub tasks')
+        if not self.id:
+            self.project.tasks_count += 1
+            self.project.save()
+            self.task_id = self.project.tasks_count
+            project = self.project
+            repo = project.repository
+            if repo.status != repo.UPDATE_IN_PROGRESS and project.auto_sync_with_github:
+                branches = project.repository.branches.filter(name__icontains=f'task_{self.task_id}')
+                if branches.count() > 0:
+                    super().save(*args, **kwargs)
+                    self.branches.add(*branches)
+
+        super().save(*args, **kwargs)
 
     def get_progress(self):
         if self.status == self.COMPLETED:
             return 100
-        top_level_sub_tasks_count = self.sub_tasks.count()
-        if top_level_sub_tasks_count == 0:
+        sub_tasks_count = self.sub_tasks.count()
+        if sub_tasks_count == 0:
             return 0
         completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED)
-        return round((completed_sub_tasks_count / top_level_sub_tasks_count) * 100, 2)
+        return round((completed_sub_tasks_count / sub_tasks_count) * 100, 2)
 
 
 class Invite(models.Model):

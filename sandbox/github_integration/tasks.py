@@ -1,10 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
-from github_integration.utils.repository import get_repository_info, get_repository_branches, get_repository_tree
-from github_integration.utils.utils import create_branch, parse_tree
+from github_integration.utils.repository import get_repository_info, get_repository_branches
+from github_integration.utils.utils import create_branch
 from github_integration.utils.decorators import Errors
 from github_integration.models import Repository, Branch
 from user.models import User
+from core.models import Project
 
 
 @shared_task
@@ -114,6 +115,17 @@ def update_repository_task(user_email, repository_id):
                 branches_to_remove = current_branches_set.difference(actual_branches_set)
                 for branch in branches_to_remove:
                     branch.delete()
+
+                try:
+                    project = repository.project
+                    if project.auto_sync_with_github:
+                        for task in project.tasks.all():
+                            print(f'Updating {task}')
+                            branches = repository.branches.filter(name__icontains=f'task_{task.task_id}')
+                            task.branches.add(*branches)
+                            task.save()
+                except Project.DoesNotExist:
+                    pass
         else:
             error_message = f'An error occurred when getting {repository.name} branches'
     elif error == Errors.NOT_FOUND:

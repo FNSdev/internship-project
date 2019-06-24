@@ -5,7 +5,7 @@ from core.models import Project, Task
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('name', 'repository', 'description')
+        fields = ('name', 'repository', 'description', 'public', 'auto_sync_with_github')
 
 
 class InviteUserForm(forms.Form):

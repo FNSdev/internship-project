@@ -124,7 +124,14 @@ class GetTasksView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+        project = get_object_or_404(
+            Project.objects.prefetch_related('team', 'tasks'),
+            owner__email=project_owner,
+            name=project_name)
+
+        team = project.team.all()
+        if user not in team:
+            raise Http404
 
         count = request.GET.get('count')
         if user == project.owner:
