@@ -33,32 +33,7 @@
 
 {% block main %}
     <h3>Tasks</h3>
-
-    <style>
-        td {
-            text-align: center
-        }
-
-        th {
-            text-align: center
-        }
-    </style>
-
-
-    <table class="table mt-3">
-        <thead>
-            <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Progress</th>
-                <th scope="col">Priority</th>
-                <th scope="col">Status</th>
-                <th scope="col">Deadline</th>
-            </tr>
-        </thead>
-        <tbody id="tasks"></tbody>
-    </table>
-    <button id="load-more-button" class="btn btn-primary">Load more</button>
-
+    {% include 'core/includes/tasks.html' %}
 {% endblock %}
 
 {% block sidebar_right %}
@@ -74,5 +49,5 @@
     <script type="module" src="{% static 'js/core/projects/invite_user_to_project.js' %}"></script>
     <script type="module" src="{% static 'js/core/projects/remove_user_from_team.js' %}"></script>
     <script type="module" src="{% static 'js/core/projects/create_task.js' %}"></script>
-    <script type="module" src="{% static 'js/core/projects/refresh_tasks.js' %}"></script>
+    <script type="module" src="{% static 'js/core/projects/refresh_all_tasks.js' %}"></script>
 {% endblock %}

@@ -127,7 +127,12 @@ class GetTasksView(LoginRequiredMixin, views.View):
         project = temp_get_project_or_404_or_403(project_name, project_owner, user)
 
         count = request.GET.get('count')
-        p = Paginator(project.tasks.all(), count)
+        if user == project.owner:
+            qs = project.tasks.all()
+        else:
+            qs = project.tasks.filter(assignees=user)
+
+        p = Paginator(qs, count)
         page = p.page(1)
 
         response = {'tasks': []}
@@ -168,10 +173,6 @@ class CreateTaskView(LoginRequiredMixin, views.View):
 
             return JsonResponse({
                 'message': 'Success',
-                'name': task.name,
-                'priority': task.get_priority_display(),
-                'status': task.get_status_display(),
-                'deadline': task.deadline,
             })
         else:
             data = form.errors.as_json()

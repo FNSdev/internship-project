@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
     {{ project.name }}
 {% endblock %}
@@ -19,10 +21,13 @@
 {% endblock %}
 
 {% block main %}
+    <h3>My Tasks</h3>
+    {% include 'core/includes/tasks.html' %}
 {% endblock %}
 
 {% block sidebar_right %}
 {% endblock %}
 
 {% block extrajs %}
+    <script type="module" src="{% static 'js/core/projects/refresh_user_tasks.js' %}"></script>
 {% endblock %}
