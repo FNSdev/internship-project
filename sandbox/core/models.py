@@ -108,7 +108,7 @@ class Task(models.Model):
             project = self.project
             repo = project.repository
             if repo.status != repo.UPDATE_IN_PROGRESS and project.auto_sync_with_github:
-                branches = project.repository.branches.filter(name__icontains=f'task_{self.task_id}')
+                branches = project.repository.branches.filter(name__icontains=f'task_{self.task_id}/')
                 if branches.count() > 0:
                     super().save(*args, **kwargs)
                     self.branches.add(*branches)

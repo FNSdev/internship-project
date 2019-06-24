@@ -120,8 +120,7 @@ def update_repository_task(user_email, repository_id):
                     project = repository.project
                     if project.auto_sync_with_github:
                         for task in project.tasks.all():
-                            print(f'Updating {task}')
-                            branches = repository.branches.filter(name__icontains=f'task_{task.task_id}')
+                            branches = repository.branches.filter(name__icontains=f'task_{task.task_id}/')
                             task.branches.add(*branches)
                             task.save()
                 except Project.DoesNotExist:
