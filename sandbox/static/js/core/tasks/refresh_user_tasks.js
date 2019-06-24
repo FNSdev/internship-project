@@ -1,4 +1,4 @@
-import {count, multiplyCount, getTasks} from "./get_tasks.js";
+import {multiplyCount, getTasks} from "./get_tasks.js";
 
 
 var url = document.location.href + '/settings/get-tasks';

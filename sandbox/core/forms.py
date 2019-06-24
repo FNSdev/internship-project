@@ -16,7 +16,7 @@ class InviteUserForm(forms.Form):
 class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
-        fields = ('name', 'description', 'priority', 'status', 'assignees', 'deadline')
+        fields = ('name', 'description', 'priority', 'status', 'assignees', 'deadline', 'branches')
 
     deadline = forms.DateField(
         widget=forms.TextInput(

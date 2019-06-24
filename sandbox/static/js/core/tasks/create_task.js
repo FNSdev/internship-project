@@ -1,11 +1,7 @@
 import {getCookie, csrfSafeMethod} from '../../csrf.js'
 
 
-jQuery(document).on('submit', '#create-task-form', function (e) {
-    e.preventDefault()
-    var jq = jQuery.noConflict();
-    var form = jQuery(this);
-    var errors_div = document.getElementById('create-task-errors');
+export function createTask(url, form, errors_div) {
     errors_div.innerText = '';
     jQuery.ajaxSetup({
         beforeSend: function (xhr, settings) {
@@ -16,7 +12,7 @@ jQuery(document).on('submit', '#create-task-form', function (e) {
     });
     jQuery.ajax({
         type: 'POST',
-        url: window.location.href + '/create-task',
+        url: url,
         data: form.serialize(),
         success: function (response) {
             alert(response['message'])
@@ -29,10 +25,18 @@ jQuery(document).on('submit', '#create-task-form', function (e) {
                 let messages = []
                 for (let i in errors[field]) {
                     messages.push(errors[field][i]['message'])
-                    jQuery('#invite-user-errors').append('<p><span class="badge badge-danger">' + field +
+                    errors_div.append('<p><span class="badge badge-danger">' + field +
                         ' : ' + messages[i] + '</span></p>')
                 }
             }
         }
     })
+}
+
+jQuery(document).on('submit', '#create-task-form', function (e) {
+    e.preventDefault()
+    var jq = jQuery.noConflict();
+    var form = jQuery(this);
+    var errors_div = document.getElementById('create-task-errors');
+    createTask(window.location.href + '/create-task', form, errors_div)
 });

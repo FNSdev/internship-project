@@ -1,6 +1,6 @@
 import {getCookie, csrfSafeMethod} from '../../csrf.js'
 
-export var count = 1;
+var count = 1;
 var tasks_rows = document.getElementById('tasks');
 
 export function getTasks (url, repeat=true) {
@@ -21,13 +21,15 @@ export function getTasks (url, repeat=true) {
             tasks_rows.innerText = '';
             var tasks = response['tasks'];
             tasks.forEach(task => {
-                jQuery('#tasks').append('<tr>' +
-                    '<td>' + task['name'] + '</td>' +
+                jQuery('#tasks').append(
+                    '<tr>' +
+                    '<td><a href="' + task['url'] + '">' + task['name'] + '</a></td>' +
                     '<td>' + task['progress'] + ' %</td>' +
                     '<td>' + task['priority'] + '</td>' +
                     '<td>' + task['status'] + '</td>' +
                     '<td>' + task['deadline'] + '</td>' +
-                    '</tr>')
+                    '</tr>'
+                )
             });
             if(repeat) {
                 setTimeout(getTasks, 10 * 1000, url);

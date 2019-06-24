@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% endblock %}
+
+{% block sidebar_left %}
+    <div class="card mt-3" style="width: 18rem;">
+        <h5 class="card-header">
+            Task # {{ task.task_id }} {{ task.name }}
+        </h5>
+        <div class="card-body">
+            <p class="card-text">Type : {{ task.get_task_type_display }}</p>
+            <p class="card-text">Status: {{ task.get_status_display }}</p>
+            <p class="card-text">Progress: {{ task.get_progress }} %</p>
+            <p class="card-text">{{ task.description }}</p>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% if task.task_type == task.TASK %}
+        <h3>Sub Tasks</h3>
+        <style>
+            td {
+                text-align: center
+            }
+
+            th {
+                text-align: center
+            }
+        </style>
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Priority</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Deadline</th>
+                    <th scope="col">Branches</th>
+                </tr>
+            </thead>
+            <tbody id="tasks"></tbody>
+        </table>
+        <button id="load-more-button" class="btn btn-primary">Load more</button>
+        <h3 class="mt-3">Create Sub Task</h3>
+        <form id="create-sub-task-form">
+            {{ sub_task_form|crispy }}
+            <button class="btn btn-success mt-3">Add Task</button>
+        </form>
+        <div id="create-sub-task-errors"></div>
+    {% endif %}
+{% endblock %}
+
+{% block sidebar_right %}
+    <h3>Branches</h3>
+    <ul class="list-group">
+        {% for branch in branches %}
+            <li class="list-group-item">
+                <p>
+                    <a href="{% url 'github_integration:branch' id=branch.repository.id commit_sha=branch.commit_sha %}">{{ branch.name }}</a>
+                </p>
+                <p>
+                    <a href="{{ branch.url }}">View on GitHub</a>
+                </p>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="module" src="{% static 'js/core/tasks/refresh_sub_tasks.js' %}"></script>
+    <script type="module" src="{% static 'js/core/tasks/create_sub_task.js' %}"></script>
+{% endblock %}

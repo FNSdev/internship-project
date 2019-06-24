@@ -2,7 +2,7 @@ from django import views
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponse, Http404
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, reverse
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from core.forms import ProjectForm, InviteUserForm, TaskForm
@@ -127,11 +127,9 @@ class GetTasksView(LoginRequiredMixin, views.View):
         project = get_object_or_404(
             Project.objects.prefetch_related('team', 'tasks'),
             owner__email=project_owner,
-            name=project_name)
-
-        team = project.team.all()
-        if user not in team:
-            raise Http404
+            name=project_name,
+            team=user
+        )
 
         count = request.GET.get('count')
         if user == project.owner:
@@ -149,7 +147,15 @@ class GetTasksView(LoginRequiredMixin, views.View):
                 'status': task.get_status_display(),
                 'priority': task.get_priority_display(),
                 'progress': task.get_progress(),
-                'deadline': task.deadline
+                'deadline': task.deadline,
+                'url': reverse(
+                    'core:task',
+                    kwargs={
+                        'user': project_owner,
+                        'name': project_name,
+                        'task_id': task.task_id,
+                    }
+                )
             })
 
         return JsonResponse(response)
@@ -176,6 +182,112 @@ class CreateTaskView(LoginRequiredMixin, views.View):
 
             task.save()
             task.assignees.add(*data['assignees'])
+            task.save()
+
+            return JsonResponse({
+                'message': 'Success',
+            })
+        else:
+            data = form.errors.as_json()
+            response = {
+                'message': 'Error',
+                'errors': json.loads(data)
+            }
+            return JsonResponse(response, status=400)
+
+
+class TaskView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+        project = get_object_or_404(
+            Project.objects.prefetch_related('team', 'tasks'),
+            owner__email=project_owner,
+            name=project_name,
+            team=user)
+        task = Task.objects.get(project=project, task_id=kwargs['task_id'])
+
+        sub_task_form = TaskForm()
+        sub_task_form.fields['branches'].queryset = project.repository.branches.all()
+        task_form = TaskForm(instance=task)
+        task_form.fields['branches'].queryset = project.repository.branches.all()
+
+        return HttpResponse(
+            render(
+                request,
+                'core/task.html',
+                context={
+                    'task': task,
+                    'branches': task.branches.all(),
+                    'sub_task_form': sub_task_form,
+                    'task_form': task_form,
+                }
+            )
+        )
+
+
+class GetSubTasksView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+        project = get_object_or_404(
+            Project.objects.prefetch_related('team', 'tasks'),
+            owner__email=project_owner,
+            name=project_name,
+            team=user
+        )
+
+        task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
+        count = request.GET.get('count')
+        p = Paginator(task.sub_tasks.all(), count)
+        page = p.page(1)
+
+        response = {'tasks': []}
+        for task in page.object_list:
+            response['tasks'].append({
+                'name': task.name,
+                'status': task.get_status_display(),
+                'priority': task.get_priority_display(),
+                'branches': [{'name': branch.name, 'url': branch.url} for branch in task.branches.all()],
+                'deadline': task.deadline
+            })
+
+        return JsonResponse(response)
+
+
+class CreateSubTaskView(LoginRequiredMixin, views.View):
+    def post(self, request, **kwargs):
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            user = request.user
+            project_name = kwargs['name']
+            project_owner = kwargs['user']
+            project = get_object_or_404(
+                Project.objects.prefetch_related('team', 'tasks'),
+                owner__email=project_owner,
+                name=project_name,
+                team=user,
+            )
+
+            parent_task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
+
+            task = Task(
+                name=data['name'],
+                project=project,
+                priority=data['priority'],
+                status=data['status'],
+                description=data['description'],
+                deadline=data['deadline'],
+                task_type=Task.SUB_TASK,
+                parent_task=parent_task,
+            )
+
+            task.save()
+            task.assignees.add(*data['assignees'])
+            task.branches.add(*data['branches'])
             task.save()
 
             return JsonResponse({

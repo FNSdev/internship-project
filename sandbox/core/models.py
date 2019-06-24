@@ -75,7 +75,8 @@ class Task(models.Model):
     )
     branches = models.ManyToManyField(
         to='github_integration.Branch',
-        related_name='tasks'
+        related_name='tasks',
+        blank=True
     )
     parent_task = models.ForeignKey(
         to='self',
@@ -99,8 +100,9 @@ class Task(models.Model):
         return f'{self.project.name} / task_{self.task_id} : {self.name}'
 
     def save(self, *args, **kwargs):
-        if self.task_type == self.SUB_TASK and self.sub_tasks.count() != 0:
-            raise ValidationError('Sub Tasks can not have sub tasks')
+        if self.parent_task is not None:
+            if self.task_type == self.SUB_TASK and self.parent_task.task_type == self.SUB_TASK:
+                raise ValidationError('Sub Tasks can not have sub tasks')
         if not self.id:
             self.project.tasks_count += 1
             self.project.save()
@@ -121,7 +123,7 @@ class Task(models.Model):
         sub_tasks_count = self.sub_tasks.count()
         if sub_tasks_count == 0:
             return 0
-        completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED)
+        completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED).count()
         return round((completed_sub_tasks_count / sub_tasks_count) * 100, 2)
 
 
