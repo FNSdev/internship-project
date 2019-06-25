@@ -7,22 +7,42 @@
 {% endblock %}
 
 {% block sidebar_left %}
-<div class="card" style="width: 18rem;">
-    <div class="card-body">
-        <h5 class="card-title">{{ project.name }}</h5>
-        <h6 class="card-subtitle mb-2 text-muted">{{ project.owner }}</h6>
-        <p class="card-text">{{ project.description }}</p>
-        <p><a href="{% url 'github_integration:repository' id=project.repository.id %}" class="card-link">Repository</a></p>
-        {% if is_owner %}
-            <p><a href="{{ request.path }}/settings" class="card-link">Settings</a></p>
-        {% endif %}
+    <div class="card" style="width: 18rem;">
+        <div class="card-body">
+            <h5 class="card-title">{{ project.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ project.owner }}</h6>
+            <p class="card-text">{{ project.description }}</p>
+            <p><a href="{% url 'github_integration:repository' id=project.repository.id %}" class="card-link">Repository</a></p>
+            {% if is_owner %}
+                <p><a href="{{ request.path }}/settings" class="card-link">Settings</a></p>
+            {% endif %}
+        </div>
     </div>
-</div>
+
+    <button class="btn btn-primary mt-3" data-toggle="modal" data-target="#myTasksModal">My Tasks</button>
+    <div class="modal fade" id="myTasksModal" tabindex="-1" role="dialog" aria-labelledby="myTasksModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myTasksModalLabel">My Tasks</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% include 'core/includes/tasks.html' %}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block main %}
-    <h3>My Tasks</h3>
-    {% include 'core/includes/tasks.html' %}
+    {% include 'core/includes/activities.html' %}
 {% endblock %}
 
 {% block sidebar_right %}
@@ -30,4 +50,5 @@
 
 {% block extrajs %}
     <script type="module" src="{% static 'js/core/tasks/refresh_user_tasks.js' %}"></script>
+    <script type="module" src="{% static 'js/core/activities/refresh_activities.js' %}"></script>
 {% endblock %}

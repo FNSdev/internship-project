@@ -102,6 +102,29 @@ class ProjectView(LoginRequiredMixin, views.View):
         return HttpResponse(render(request, 'core/project.html', context=ctx))
 
 
+class GetActivitiesView(LoginRequiredMixin, views.View):
+    def get(self, request, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+        project = get_object_or_404(
+            Project.objects.prefetch_related('team', 'tasks'),
+            owner__email=project_owner,
+            name=project_name,
+            team=user
+        )
+
+        count = request.GET.get('count')
+        p = Paginator(project.activities.all(), count)
+        page = p.page(1)
+
+        response = {'activities': []}
+        for activity in page.object_list:
+            response['activities'].append(activity.get_html())
+
+        return JsonResponse(response)
+
+
 class ProjectSettingsView(LoginRequiredMixin, views.View):
     def get(self, request, **kwargs):
         user = request.user

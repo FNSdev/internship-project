@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import HStoreField
 from django.forms.models import model_to_dict
+from django.shortcuts import reverse
 
 
 class Project(models.Model):
@@ -126,6 +127,7 @@ class Task(models.Model):
             activity_type=Activity.TASK_WAS_CREATED,
             related_object=self,
             context={},
+            project=self.project,
         )
 
     def on_updated(self, difference):
@@ -134,7 +136,8 @@ class Task(models.Model):
             related_object=self,
             context={
                 'difference': difference
-            }
+            },
+            project=self.project,
         )
 
     def on_completed(self):
@@ -142,6 +145,7 @@ class Task(models.Model):
             activity_type=Activity.TASK_WAS_COMPLETED,
             related_object=self,
             context={},
+            project=self.project,
         )
 
     def get_progress(self):
@@ -159,15 +163,29 @@ class Task(models.Model):
 
         for k, v in other_fields.items():
             if fields[k] != v:
+                if k == 'status':
+                    changed_from = self.STATUSES[v][1]
+                    changed_to = self.STATUSES[fields[k]][1]
+                elif k == 'priority':
+                    changed_from = self.PRIORITIES[v][1]
+                    changed_to = self.PRIORITIES[fields[k]][1]
+                elif k == 'assignees':
+                    changed_from = [user.email for user in other_fields[k]]
+                    changed_to = [user.email for user in self.assignees.all()]
+                elif k == 'branches':
+                    changed_from = [branch.name for branch in other_fields[k]]
+                    changed_to = [branch.name for branch in self.branches.all()]
+                else:
+                    changed_from = other_fields[k]
+                    changed_to = fields[k]
                 difference.append(
-                    {
-                        'field_name': k,
-                        'old_value': v,
-                        'new_value': fields[k],
-                    }
+                    (
+                        f'<li><mark>{k}</mark> field was changed <b>from</b> <mark>{changed_from}</mark> '
+                        f'<b>to</b> <mark>{changed_to}</mark></li>'
+                    )
                 )
 
-        return difference
+        return ''.join(difference)
 
 
 class Invite(models.Model):
@@ -219,16 +237,46 @@ class Activity(models.Model):
     related_object = GenericForeignKey()
     activity_type = models.IntegerField(choices=TYPES)
     context = HStoreField()
+    date_time = models.DateTimeField(auto_now_add=True, null=True)
+    project = models.ForeignKey(
+        to='core.Project',
+        related_name='activities',
+        on_delete=models.CASCADE,
+        null=True
+    )
+
+    class Meta:
+        ordering = ['-date_time', 'activity_type']
 
     def get_html(self):
         if self.content_type.name == 'task':
-            task = self.related_object
             if self.activity_type == self.TASK_WAS_CREATED:
-                pass
+                html = (
+                    '<tr>'
+                    f'<td>{self.date_time}</td>'
+                    f'<td>{self.get_activity_type_display()}</td>'
+                    f'<td><b>{self.related_object.name} Task</b> was created</td>'
+                    '</tr>'
+                )
+                return html
             elif self.activity_type == self.TASK_WAS_UPDATED:
-                pass
+                html = (
+                    '<tr>'
+                    f'<td>{self.date_time}</td>'
+                    f'<td>{self.get_activity_type_display()}</td>'
+                    f'<td><b>{self.related_object.name} Task</b> was updated.'
+                    f' Changes: <ul>{self.context["difference"]}</ul></tr>'
+                )
+                return html
             elif self.activity_type == self.TASK_WAS_COMPLETED:
-               pass
+                html = (
+                    '<tr>'
+                    f'<td>{self.date_time}</td>'
+                    f'<td>{self.get_activity_type_display()}</td>'
+                    f'<td><b>{self.related_object.name} Task</b> was completed</td>'
+                    '</tr>'
+                )
+                return html
             else:
                 return 'Unknown task activity'
         elif self.content_type.name == 'branch':

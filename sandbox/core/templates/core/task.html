@@ -22,7 +22,6 @@
             {% for branch in branches %}
                 <li class="list-group-item">
                     <a href="{% url 'github_integration:branch' id=branch.repository.id commit_sha=branch.commit_sha %}">{{ branch.name }}</a>
-                    <a href="{{ branch.url }}">View on GitHub</a>
                 </li>
             {% endfor %}
         </ul>
@@ -80,7 +79,7 @@
             <tbody id="tasks"></tbody>
         </table>
         <button id="load-more-button" class="btn btn-primary">Load more</button>
-        <button class="btn btn-primary" data-toggle="modal" data-target="#createSubTaskModal">Create Subtask</button>
+        <button class="btn btn-primary" data-toggle="modal" data-target="#createSubTaskModal">Create SubTask</button>
 
         <div class="modal fade" id="createSubTaskModal" tabindex="-1" role="dialog" aria-labelledby="createSubTaskModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">

@@ -16,6 +16,7 @@ from core.views import (
     GetSubTasksView,
     CreateSubTaskView,
     UpdateTaskView,
+    GetActivitiesView
 )
 
 
@@ -28,6 +29,7 @@ urlpatterns = [
     path('invites/decline/<int:id>', DeclineInviteView.as_view(), name='decline-invite'),
     path('projects', ProjectsView.as_view(), name='projects'),
     path('projects/<str:user>/<str:name>', ProjectView.as_view(), name='project'),
+    path('projects/<str:user>/<str:name>/get-activities', GetActivitiesView.as_view(), name='get-activities'),
     path('projects/<str:user>/<str:name>/settings', ProjectSettingsView.as_view(), name='project_settings'),
     path('projects/<str:user>/<str:name>/settings/invite-user', InviteUserView.as_view(), name='invite'),
     path('projects/<str:user>/<str:name>/settings/remove-user/<str:email>', RemoveUserView.as_view(), name='invite'),
