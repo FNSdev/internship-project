@@ -5,8 +5,9 @@ from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, reverse
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.forms.models import model_to_dict
 from core.forms import ProjectForm, InviteUserForm, TaskForm
-from core.models import Project, Task, Invite
+from core.models import Project, Task, Invite, Activity
 from user.models import User
 import json
 
@@ -108,8 +109,15 @@ class ProjectSettingsView(LoginRequiredMixin, views.View):
         project_owner = kwargs['user']
 
         project = temp_get_project_or_404_or_403(project_name, project_owner, user)
-        task_form = TaskForm()
+        task_form = TaskForm(
+            initial={
+                'project': project,
+                'task_type': Task.TASK,
+                'parent_task': None
+            },
+        )
         task_form.fields['assignees'].queryset = project.team.all()
+        task_form.fields['branches'].queryset = project.repository.branches.all()
 
         ctx = {
             'project': project,
@@ -165,24 +173,8 @@ class CreateTaskView(LoginRequiredMixin, views.View):
     def post(self, request, **kwargs):
         form = TaskForm(request.POST)
         if form.is_valid():
-            data = form.cleaned_data
-            user = request.user
-            project_name = kwargs['name']
-            project_owner = kwargs['user']
-            project = temp_get_project_or_404_or_403(project_name, project_owner, user)
-
-            task = Task(
-                name=data['name'],
-                project=project,
-                priority=data['priority'],
-                status=data['status'],
-                description=data['description'],
-                deadline=data['deadline'],
-            )
-
-            task.save()
-            task.assignees.add(*data['assignees'])
-            task.save()
+            task = form.save()
+            task.on_created()
 
             return JsonResponse({
                 'message': 'Success',
@@ -208,8 +200,15 @@ class TaskView(LoginRequiredMixin, views.View):
             team=user)
         task = Task.objects.get(project=project, task_id=kwargs['task_id'])
 
-        sub_task_form = TaskForm()
+        sub_task_form = TaskForm(
+            initial={
+                'project': project,
+                'task_type': Task.SUB_TASK,
+                'parent_task': task
+            }
+        )
         sub_task_form.fields['branches'].queryset = project.repository.branches.all()
+
         task_form = TaskForm(instance=task)
         task_form.fields['branches'].queryset = project.repository.branches.all()
 
@@ -225,6 +224,39 @@ class TaskView(LoginRequiredMixin, views.View):
                 }
             )
         )
+
+
+class UpdateTaskView(LoginRequiredMixin, views.View):
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        project_name = kwargs['name']
+        project_owner = kwargs['user']
+        project = get_object_or_404(
+            Project.objects.prefetch_related('team', 'tasks'),
+            owner__email=project_owner,
+            name=project_name,
+            team=user)
+
+        task = Task.objects.get(project=project, task_id=kwargs['task_id'])
+        old_fields = model_to_dict(task)
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            task = form.save()
+
+            if task.status == Task.COMPLETED:
+                task.on_completed()
+            else:
+                difference = task.get_difference(old_fields)
+                task.on_updated(difference)
+
+            return JsonResponse({'message': 'Updated'})
+        else:
+            data = form.errors.as_json()
+            response = {
+                'message': 'Error',
+                'errors': json.loads(data)
+            }
+            return JsonResponse(response, status=400)
 
 
 class GetSubTasksView(LoginRequiredMixin, views.View):
@@ -257,39 +289,13 @@ class GetSubTasksView(LoginRequiredMixin, views.View):
         return JsonResponse(response)
 
 
+# TODO create subtasks in CreateTaskView
 class CreateSubTaskView(LoginRequiredMixin, views.View):
     def post(self, request, **kwargs):
         form = TaskForm(request.POST)
         if form.is_valid():
-            data = form.cleaned_data
-            user = request.user
-            project_name = kwargs['name']
-            project_owner = kwargs['user']
-            project = get_object_or_404(
-                Project.objects.prefetch_related('team', 'tasks'),
-                owner__email=project_owner,
-                name=project_name,
-                team=user,
-            )
-
-            parent_task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
-
-            task = Task(
-                name=data['name'],
-                project=project,
-                priority=data['priority'],
-                status=data['status'],
-                description=data['description'],
-                deadline=data['deadline'],
-                task_type=Task.SUB_TASK,
-                parent_task=parent_task,
-            )
-
-            task.save()
-            task.assignees.add(*data['assignees'])
-            task.branches.add(*data['branches'])
-            task.save()
-
+            task = form.save()
+            task.on_created()
             return JsonResponse({
                 'message': 'Success',
             })

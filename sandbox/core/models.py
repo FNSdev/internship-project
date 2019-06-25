@@ -1,5 +1,9 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.postgres.fields import HStoreField
+from django.forms.models import model_to_dict
 
 
 class Project(models.Model):
@@ -117,6 +121,29 @@ class Task(models.Model):
 
         super().save(*args, **kwargs)
 
+    def on_created(self):
+        Activity.objects.create(
+            activity_type=Activity.TASK_WAS_CREATED,
+            related_object=self,
+            context={},
+        )
+
+    def on_updated(self, difference):
+        Activity.objects.create(
+            activity_type=Activity.TASK_WAS_UPDATED,
+            related_object=self,
+            context={
+                'difference': difference
+            }
+        )
+
+    def on_completed(self):
+        Activity.objects.create(
+            activity_type=Activity.TASK_WAS_COMPLETED,
+            related_object=self,
+            context={},
+        )
+
     def get_progress(self):
         if self.status == self.COMPLETED:
             return 100
@@ -125,6 +152,22 @@ class Task(models.Model):
             return 0
         completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED).count()
         return round((completed_sub_tasks_count / sub_tasks_count) * 100, 2)
+
+    def get_difference(self, other_fields):
+        difference = []
+        fields = model_to_dict(self)
+
+        for k, v in other_fields.items():
+            if fields[k] != v:
+                difference.append(
+                    {
+                        'field_name': k,
+                        'old_value': v,
+                        'new_value': fields[k],
+                    }
+                )
+
+        return difference
 
 
 class Invite(models.Model):
@@ -156,3 +199,62 @@ class Invite(models.Model):
     def decline(self):
         self.status = Invite.DECLINED
         self.save()
+
+
+class Activity(models.Model):
+    TASK_WAS_CREATED = 0
+    TASK_WAS_UPDATED = 1
+    TASK_WAS_COMPLETED = 2
+    BRANCH_WAS_UPDATED = 3
+
+    TYPES = (
+        (TASK_WAS_CREATED, 'task was created'),
+        (TASK_WAS_UPDATED, 'task was updated'),
+        (TASK_WAS_COMPLETED, 'task was completed'),
+        (BRANCH_WAS_UPDATED, 'branch was updated'),
+    )
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    related_object = GenericForeignKey()
+    activity_type = models.IntegerField(choices=TYPES)
+    context = HStoreField()
+
+    def get_html(self):
+        if self.content_type.name == 'task':
+            task = self.related_object
+            if self.activity_type == self.TASK_WAS_CREATED:
+                pass
+            elif self.activity_type == self.TASK_WAS_UPDATED:
+                pass
+            elif self.activity_type == self.TASK_WAS_COMPLETED:
+               pass
+            else:
+                return 'Unknown task activity'
+        elif self.content_type.name == 'branch':
+            if self.activity_type == self.BRANCH_WAS_UPDATED:
+                pass
+            else:
+                return 'Unknown branch activity'
+        else:
+            return 'Unknown activity'
+
+    def __str__(self):
+        if self.content_type.name == 'task':
+            task = self.related_object
+            if self.activity_type == self.TASK_WAS_CREATED:
+                return f'{task} was created'
+            elif self.activity_type == self.TASK_WAS_UPDATED:
+                return f'{task} was updated'
+            elif self.activity_type == self.TASK_WAS_COMPLETED:
+                return f'{task} was completed'
+            else:
+                return 'Unknown task activity'
+        elif self.content_type.name == 'branch':
+            branch = self.related_object
+            if self.activity_type == self.BRANCH_WAS_UPDATED:
+                return f'Branch {branch} was updated'
+            else:
+                return 'Unknown branch activity'
+        else:
+            return 'Unknown activity'

@@ -16,11 +16,38 @@ class InviteUserForm(forms.Form):
 class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
-        fields = ('name', 'description', 'priority', 'status', 'assignees', 'deadline', 'branches')
+        fields = (
+            'name',
+            'description',
+            'priority',
+            'status',
+            'assignees',
+            'deadline',
+            'branches',
+            'project',
+            'task_type',
+            'parent_task',
+        )
 
     deadline = forms.DateField(
         widget=forms.TextInput(
             attrs={'type': 'date'}
         ),
+        required=False
+    )
+
+    project = forms.ModelChoiceField(
+        queryset=Project.objects.all(),
+        widget=forms.HiddenInput
+    )
+
+    task_type = forms.ChoiceField(
+        choices=Task.TYPES,
+        widget=forms.HiddenInput
+    )
+
+    parent_task = forms.ModelChoiceField(
+        queryset=Task.objects.all(),
+        widget=forms.HiddenInput,
         required=False
     )
