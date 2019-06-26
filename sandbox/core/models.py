@@ -263,22 +263,24 @@ class Invite(models.Model):
 
 
 class Activity(models.Model):
-    TASK_WAS_CREATED = 0
-    TASK_WAS_UPDATED = 1
-    TASK_WAS_COMPLETED = 2
-    BRANCH_WAS_UPDATED = 3
+    TASK_WAS_CREATED = 'TASK_WAS_CREATED'
+    TASK_WAS_UPDATED = 'TASK_WAS_UPDATED'
+    TASK_WAS_COMPLETED = 'TASK_WAS_COMPLETED'
+    BRANCH_WAS_UPDATED = 'BRANCH_WAS_UPDATED'
+    UNKNOWN_ACTIVITY = 'UNKNOWN_ACTIVITY'
 
     TYPES = (
         (TASK_WAS_CREATED, 'task was created'),
         (TASK_WAS_UPDATED, 'task was updated'),
         (TASK_WAS_COMPLETED, 'task was completed'),
         (BRANCH_WAS_UPDATED, 'branch was updated'),
+        (UNKNOWN_ACTIVITY, 'unknown activity'),
     )
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     related_object = GenericForeignKey()
-    activity_type = models.IntegerField(choices=TYPES)
+    activity_type = models.CharField(choices=TYPES, default=UNKNOWN_ACTIVITY, max_length=50)
     context = HStoreField()
     date_time = models.DateTimeField(auto_now_add=True, null=True)
     project = models.ForeignKey(
