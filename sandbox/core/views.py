@@ -1,27 +1,14 @@
+import json
 from django import views
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, reverse
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.forms.models import model_to_dict
 from core.forms import ProjectForm, InviteUserForm, TaskForm
 from core.models import Project, Task, Invite
 from user.models import User
-import json
-
-
-def temp_get_project_or_404_or_403(project_name, project_owner, user):
-    if project_owner != user.email:
-        raise PermissionDenied
-
-    project = get_object_or_404(
-        Project.objects.prefetch_related('team', 'tasks'),
-        owner__email=project_owner,
-        name=project_name)
-
-    return project
 
 
 class IndexView(TemplateView):
@@ -81,10 +68,7 @@ class ProjectView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name)
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
         team = project.team.all()
         if user not in team:
@@ -109,12 +93,7 @@ class GetActivitiesView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name,
-            team=user
-        )
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
         count = request.GET.get('count')
         p = Paginator(project.activities.all(), count)
@@ -133,7 +112,7 @@ class ProjectSettingsView(LoginRequiredMixin, views.View):
         project_name = kwargs['name']
         project_owner = kwargs['user']
 
-        project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+        project = Project.objects.get_project_or_404_or_403(project_name, project_owner, user.email)
         task_form = TaskForm(
             initial={
                 'project': project,
@@ -159,12 +138,7 @@ class GetTasksView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name,
-            team=user
-        )
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
         count = request.GET.get('count')
         if user == project.owner:
@@ -220,12 +194,8 @@ class TaskView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name,
-            team=user)
-        task = Task.objects.get(project=project, task_id=kwargs['task_id'])
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
+        task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
 
         sub_task_form = TaskForm(
             initial={
@@ -258,13 +228,9 @@ class UpdateTaskView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name,
-            team=user)
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
-        task = Task.objects.get(project=project, task_id=kwargs['task_id'])
+        task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
         old_fields = model_to_dict(task)
         form = TaskForm(request.POST, instance=task)
         if form.is_valid():
@@ -293,12 +259,7 @@ class GetSubTasksView(LoginRequiredMixin, views.View):
         user = request.user
         project_name = kwargs['name']
         project_owner = kwargs['user']
-        project = get_object_or_404(
-            Project.objects.prefetch_related('team', 'tasks'),
-            owner__email=project_owner,
-            name=project_name,
-            team=user
-        )
+        project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
         task = get_object_or_404(project.tasks.all(), task_id=kwargs['task_id'])
         count = request.GET.get('count')
@@ -318,25 +279,6 @@ class GetSubTasksView(LoginRequiredMixin, views.View):
         return JsonResponse(response)
 
 
-# TODO create subtasks in CreateTaskView
-class CreateSubTaskView(LoginRequiredMixin, views.View):
-    def post(self, request, **kwargs):
-        form = TaskForm(request.POST)
-        if form.is_valid():
-            task = form.save()
-            task.on_created()
-            return JsonResponse({
-                'message': 'Success',
-            })
-        else:
-            data = form.errors.as_json()
-            response = {
-                'message': 'Error',
-                'errors': json.loads(data)
-            }
-            return JsonResponse(response, status=400)
-
-
 class InviteUserView(LoginRequiredMixin, views.View):
     def post(self, request, **kwargs):
         form = InviteUserForm(request.POST)
@@ -345,7 +287,7 @@ class InviteUserView(LoginRequiredMixin, views.View):
             project_name = kwargs['name']
             project_owner = kwargs['user']
 
-            project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+            project = Project.objects.get_project_or_404_or_403(project_name, project_owner, user.email)
 
             data = form.cleaned_data
             try:
@@ -382,7 +324,7 @@ class RemoveUserView(LoginRequiredMixin, views.View):
         project_name = kwargs['name']
         project_owner = kwargs['user']
 
-        project = temp_get_project_or_404_or_403(project_name, project_owner, user)
+        project = Project.objects.get_project_or_404_or_403(project_name, project_owner, user.email)
         user_to_remove = get_object_or_404(project.team.all(), email=kwargs['email'])
 
         if user_to_remove == project.owner:

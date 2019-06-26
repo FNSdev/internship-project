@@ -14,7 +14,6 @@ from core.views import (
     GetTasksView,
     TaskView,
     GetSubTasksView,
-    CreateSubTaskView,
     UpdateTaskView,
     GetActivitiesView
 )
@@ -43,7 +42,7 @@ urlpatterns = [
     ),
     path(
         'projects/<str:user>/<str:name>/tasks/<int:task_id>/create-sub-task',
-        CreateSubTaskView.as_view(),
+        CreateTaskView.as_view(),
         name='create-sub-task'
     ),
     path('projects/<str:user>/<str:name>/tasks/<int:task_id>/update', UpdateTaskView.as_view(), name='update-task'),

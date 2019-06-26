@@ -1,9 +1,39 @@
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import HStoreField
 from django.forms.models import model_to_dict
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+
+
+class ProjectManager(models.Manager):
+    def get_project_or_404_or_403(self, project_name, owner_email, user_email):
+        """Returns project if it is accessed by its owner"""
+
+        project = get_object_or_404(
+            Project.objects.prefetch_related('tasks', 'team', 'repository'),
+            owner__email=owner_email,
+            name=project_name,
+        )
+        if owner_email == user_email:
+            return project
+        else:
+            raise PermissionDenied
+
+    def get_project_or_404(self, project_name, owner_email, user):
+        """Returns a project if it is public or raises 404 if user is not in the project's team"""
+
+        project = get_object_or_404(
+            Project.objects.prefetch_related('tasks', 'team', 'repository'),
+            owner__email=owner_email,
+            name=project_name,
+        )
+
+        if project.public or user in project.team.all():
+            return project
+        raise Http404
 
 
 class Project(models.Model):
@@ -25,6 +55,8 @@ class Project(models.Model):
     public = models.BooleanField(default=False)
     auto_sync_with_github = models.BooleanField(default=False)
     tasks_count = models.PositiveIntegerField(default=0)
+
+    objects = ProjectManager()
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
