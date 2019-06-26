@@ -20,7 +20,9 @@ class AddRepositoryView(LoginRequiredMixin, views.View):
         return JsonResponse({'message': 'Task in queue', 'task_id': task.id})
 
 
-class GetTaskStatusView(LoginRequiredMixin, views.View):
+class GetCeleryTaskStatusView(LoginRequiredMixin, views.View):
+    """Checks if celery task with specific id is ready"""
+
     def get(self, request):
         task_id = request.GET.get('task_id')
         task = AsyncResult(task_id)
@@ -28,17 +30,20 @@ class GetTaskStatusView(LoginRequiredMixin, views.View):
             message = task.get()
             if message is None:
                 message = 'Success!'
-            print(message)
             return JsonResponse({'status': 'ready', 'message': message})
         return JsonResponse({'status': 'not-ready'})
 
 
 class GetGithubTokenView(LoginRequiredMixin, views.View):
+    """Listens to GitHub login callback"""
+
     def get(self, request):
         code = request.GET.get('code')
 
+        # Sending code back to GitHub in order to get OAuth token
         error, token = create_token(code)
         if error is None:
+            # If token was received, trying to get GitHub username with this token
             error, username = get_username(token)
             if error is None:
                 messages.add_message(request, messages.INFO, 'Github token and username were added successfully')
@@ -55,11 +60,15 @@ class GetGithubTokenView(LoginRequiredMixin, views.View):
 
 
 class CreateGithubTokenView(LoginRequiredMixin, views.View):
+    """Redirects to GitHub"""
+
     def get(self, request):
         return HttpResponseRedirect(get_login_url())
 
 
 class GetRepositoryTreeView(views.View):
+    """Returns saved repository structure as json"""
+
     def get(self, request, **kwargs):
         id = kwargs.get('id')
         repository = get_object_or_404(Repository, id=id)
@@ -67,6 +76,8 @@ class GetRepositoryTreeView(views.View):
 
 
 class GithubRepositoriesView(LoginRequiredMixin, views.View):
+    """Lists all GitHub repositories, that user owns"""
+
     def get(self, request):
         user = request.user
         error, repos = get_repository_list(user.github_token)
@@ -90,6 +101,8 @@ class GithubRepositoriesView(LoginRequiredMixin, views.View):
 
 
 class RepositoriesView(LoginRequiredMixin, views.View):
+    """Lists all repositories, that user has saved"""
+
     def get(self, request):
         repositories = request.user.repositories.all()
         ctx = {
@@ -117,6 +130,12 @@ class RepositoryView(LoginRequiredMixin, views.View):
 
 
 class BranchView(LoginRequiredMixin, views.View):
+    """
+    Lists branch content.
+    If content is a directory, user can open it and see all inner content.
+    If content is a file, request is made to get this file's text
+    """
+
     def get(self, request, **kwargs):
         repository = get_object_or_404(Repository, id=kwargs.get('id'))
         if repository.user != request.user:
@@ -131,12 +150,16 @@ class BranchView(LoginRequiredMixin, views.View):
         path = kwargs.get('path')
         type_ = 'dir'
 
+        # Check if we are not on a top level of hierarchy
         if path:
             data = branch
+
+            # Get required content
             path = path.split('/')
             for p in path:
                 data = get_object_or_404(data.content, name=p)
 
+            # If content is a file, get it's text
             if data.type == Content.FILE:
                 type_ = 'file'
                 error, blob = get_blob(request.user.github_token, data.url)

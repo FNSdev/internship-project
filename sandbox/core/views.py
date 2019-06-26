@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.forms.models import model_to_dict
 from core.forms import ProjectForm, InviteUserForm, TaskForm
-from core.models import Project, Task, Invite, Activity
+from core.models import Project, Task, Invite
 from user.models import User
 import json
 
@@ -103,6 +103,8 @@ class ProjectView(LoginRequiredMixin, views.View):
 
 
 class GetActivitiesView(LoginRequiredMixin, views.View):
+    # Returns required amount of activities
+
     def get(self, request, **kwargs):
         user = request.user
         project_name = kwargs['name']
@@ -151,6 +153,8 @@ class ProjectSettingsView(LoginRequiredMixin, views.View):
 
 
 class GetTasksView(LoginRequiredMixin, views.View):
+    """Returns required amount of tasks"""
+
     def get(self, request, **kwargs):
         user = request.user
         project_name = kwargs['name']
@@ -283,6 +287,8 @@ class UpdateTaskView(LoginRequiredMixin, views.View):
 
 
 class GetSubTasksView(LoginRequiredMixin, views.View):
+    """Returns required amount of task's sub_tasks"""
+
     def get(self, request, **kwargs):
         user = request.user
         project_name = kwargs['name']

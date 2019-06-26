@@ -4,7 +4,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import HStoreField
 from django.forms.models import model_to_dict
-from django.shortcuts import reverse
 
 
 class Project(models.Model):
@@ -105,13 +104,17 @@ class Task(models.Model):
         return f'{self.project.name} / task_{self.task_id} : {self.name}'
 
     def save(self, *args, **kwargs):
+        # sub_task can not have sub_tasks
         if self.parent_task is not None:
             if self.task_type == self.SUB_TASK and self.parent_task.task_type == self.SUB_TASK:
                 raise ValidationError('Sub Tasks can not have sub tasks')
         if not self.id:
+            # If task is new, give it unique per project id
             self.project.tasks_count += 1
             self.project.save()
             self.task_id = self.project.tasks_count
+
+            # If auto-sync is enabled, try to find related branches
             project = self.project
             repo = project.repository
             if repo.status != repo.UPDATE_IN_PROGRESS and project.auto_sync_with_github:
@@ -123,6 +126,8 @@ class Task(models.Model):
         super().save(*args, **kwargs)
 
     def on_created(self):
+        """Creates required Activity object"""
+
         Activity.objects.create(
             activity_type=Activity.TASK_WAS_CREATED,
             related_object=self,
@@ -131,6 +136,8 @@ class Task(models.Model):
         )
 
     def on_updated(self, difference):
+        """Creates required Activity object"""
+
         Activity.objects.create(
             activity_type=Activity.TASK_WAS_UPDATED,
             related_object=self,
@@ -141,6 +148,8 @@ class Task(models.Model):
         )
 
     def on_completed(self):
+        """Creates required Activity object"""
+
         Activity.objects.create(
             activity_type=Activity.TASK_WAS_COMPLETED,
             related_object=self,
@@ -157,7 +166,9 @@ class Task(models.Model):
         completed_sub_tasks_count = self.sub_tasks.filter(status=self.COMPLETED).count()
         return round((completed_sub_tasks_count / sub_tasks_count) * 100, 2)
 
-    def get_difference(self, other_fields):
+    def get_difference(self, other_fields: dict):
+        """Returns difference between this Task and other task field's content"""
+
         difference = []
         fields = model_to_dict(self)
 
@@ -249,6 +260,8 @@ class Activity(models.Model):
         ordering = ['-date_time', 'activity_type']
 
     def get_html(self):
+        """Returns an html representation of activity depending on related object type and activity type"""
+
         if self.content_type.name == 'task':
             if self.activity_type == self.TASK_WAS_CREATED:
                 html = (

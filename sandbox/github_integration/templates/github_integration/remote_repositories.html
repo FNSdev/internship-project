@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
     {{ source }} Repositories
 {% endblock %}
@@ -24,41 +26,5 @@
 {% endblock %}
 
 {% block extrajs %}
-    <script>
-        jQuery(document).on('click', '.add', function(e) {
-            var jq = jQuery.noConflict()
-            var repository = e.target.id
-
-            jQuery.ajax ({
-                type: 'POST',
-                url: "{% url 'github_integration:add_repository' %}",
-                data: {
-                    repository: repository,
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    alert(response['message'])
-                    var get_task_result = function () {
-                        jQuery.ajax ({
-                            type: 'GET',
-                            url: "{% url 'github_integration:get_task_status' %}",
-                            data: {
-                                task_id: response['task_id']
-                            },
-                            success: function (response) {
-                                if (response['status'] == 'ready') {
-                                    alert(response['message'])
-                                }
-                                else {
-                                    setTimeout(get_task_result, 2 * 1000)
-                                }
-
-                            }
-                        })
-                    }
-                    get_task_result()
-                }
-            })
-        })
-    </script>
+    <script type="module" src="{% static 'js/github_integration/add_repository.js' %}"></script>
 {% endblock %}
