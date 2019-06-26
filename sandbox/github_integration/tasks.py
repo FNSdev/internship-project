@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
+from django.db import transaction
 from github_integration.utils.repository import get_repository_info, get_repository_branches
 from github_integration.utils.utils import create_branch
 from github_integration.utils.decorators import Errors
@@ -9,6 +10,7 @@ from core.models import Project
 
 
 @shared_task
+@transaction.atomic
 def create_repository_task(user_email, repository_name):
     """Creates new repository"""
 
@@ -66,6 +68,7 @@ def create_repository_task(user_email, repository_name):
 
 
 @shared_task
+@transaction.atomic
 def update_repository_task(user_email, repository_id):
     """Updates content of specific repository"""
 
