@@ -2,10 +2,11 @@ from django.db import models
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.postgres.fields import HStoreField
+from django.contrib.postgres.fields import JSONField
 from django.forms.models import model_to_dict
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 
 
 class ProjectManager(models.Manager):
@@ -221,14 +222,13 @@ class Task(models.Model):
                 else:
                     changed_from = other_fields[k]
                     changed_to = fields[k]
-                difference.append(
-                    (
-                        f'<li><mark>{k}</mark> field was changed <b>from</b> <mark>{changed_from}</mark> '
-                        f'<b>to</b> <mark>{changed_to}</mark></li>'
-                    )
-                )
+                difference.append({
+                    'field': k,
+                    'changed_from': changed_from,
+                    'changed_to': changed_to
+                })
 
-        return ''.join(difference)
+        return difference
 
 
 class Invite(models.Model):
@@ -277,11 +277,18 @@ class Activity(models.Model):
         (UNKNOWN_ACTIVITY, 'unknown activity'),
     )
 
+    TEMPLATES = {
+        TASK_WAS_CREATED: 'core/activities/task_created.html',
+        TASK_WAS_UPDATED: 'core/activities/task_updated.html',
+        TASK_WAS_COMPLETED: 'core/activities/task_completed.html',
+        BRANCH_WAS_UPDATED: 'core/activities/branch_updated.html',
+    }
+
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     related_object = GenericForeignKey()
     activity_type = models.CharField(choices=TYPES, default=UNKNOWN_ACTIVITY, max_length=50)
-    context = HStoreField()
+    context = JSONField()
     date_time = models.DateTimeField(auto_now_add=True, null=True)
     project = models.ForeignKey(
         to='core.Project',
@@ -296,43 +303,12 @@ class Activity(models.Model):
     def get_html(self):
         """Returns an html representation of activity depending on related object type and activity type"""
 
-        if self.content_type.name == 'task':
-            if self.activity_type == self.TASK_WAS_CREATED:
-                html = (
-                    '<tr>'
-                    f'<td>{self.date_time}</td>'
-                    f'<td>{self.get_activity_type_display()}</td>'
-                    f'<td><b>{self.related_object.name} Task</b> was created</td>'
-                    '</tr>'
-                )
-                return html
-            elif self.activity_type == self.TASK_WAS_UPDATED:
-                html = (
-                    '<tr>'
-                    f'<td>{self.date_time}</td>'
-                    f'<td>{self.get_activity_type_display()}</td>'
-                    f'<td><b>{self.related_object.name} Task</b> was updated.'
-                    f' Changes: <ul>{self.context["difference"]}</ul></tr>'
-                )
-                return html
-            elif self.activity_type == self.TASK_WAS_COMPLETED:
-                html = (
-                    '<tr>'
-                    f'<td>{self.date_time}</td>'
-                    f'<td>{self.get_activity_type_display()}</td>'
-                    f'<td><b>{self.related_object.name} Task</b> was completed</td>'
-                    '</tr>'
-                )
-                return html
-            else:
-                return 'Unknown task activity'
-        elif self.content_type.name == 'branch':
-            if self.activity_type == self.BRANCH_WAS_UPDATED:
-                pass
-            else:
-                return 'Unknown branch activity'
-        else:
-            return 'Unknown activity'
+        return render_to_string(
+            self.TEMPLATES[self.activity_type],
+            context={
+                'activity': self,
+            }
+        )
 
     def __str__(self):
         if self.content_type.name == 'task':
