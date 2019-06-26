@@ -7,7 +7,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -37,9 +37,3 @@ GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
 # Celery
 
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
-CELERY_BEAT_SCHEDULE = {
-    'test-task': {
-        'task': 'core.tasks.test',
-        'schedule': 5,
-    }
-}
