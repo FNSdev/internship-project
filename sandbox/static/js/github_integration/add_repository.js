@@ -2,8 +2,8 @@ import {getCookie, csrfSafeMethod} from '../csrf.js'
 
 
 jQuery(document).on('click', '.add', function(e) {
-    var jq = jQuery.noConflict()
-    var repository = e.target.id
+    var jq = jQuery.noConflict();
+    var repository = e.target.id;
 
     jQuery.ajaxSetup({
         beforeSend: function (xhr, settings) {
@@ -14,7 +14,7 @@ jQuery(document).on('click', '.add', function(e) {
     });
     jQuery.ajax ({
         type: 'POST',
-        url: "{% url 'github_integration:add_repository' %}",
+        url: '/github-integration/add-repository',
         data: {
             repository: repository,
         },
@@ -23,7 +23,7 @@ jQuery(document).on('click', '.add', function(e) {
             var get_task_result = function () {
                 jQuery.ajax ({
                     type: 'GET',
-                    url: "{% url 'github_integration:get_celery_task_status' %}",
+                    url: '/github-integration/get-celery-task-status',
                     data: {
                         task_id: response['task_id']
                     },

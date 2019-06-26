@@ -37,6 +37,6 @@ jQuery(document).on('submit', '#create-task-form', function (e) {
     e.preventDefault()
     var jq = jQuery.noConflict();
     var form = jQuery(this);
-    var errors_div = document.getElementById('create-task-errors');
+    var errors_div = jQuery('#create-task-errors');
     createTask(window.location.href + '/create-task', form, errors_div)
 });
