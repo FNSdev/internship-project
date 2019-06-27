@@ -1,11 +1,31 @@
 from django import forms
 from core.models import Project, Task
+from user.models import User
 
 
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ('name', 'repository', 'description', 'public', 'auto_sync_with_github')
+        fields = (
+            'name',
+            'repository',
+            'description',
+            'public',
+            'auto_sync_with_github',
+            'owner',
+            'team',
+        )
+
+    owner = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.HiddenInput(),
+    )
+
+    team = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.HiddenInput(),
+        required=False,
+    )
 
 
 class InviteUserForm(forms.Form):
@@ -38,16 +58,16 @@ class TaskForm(forms.ModelForm):
 
     project = forms.ModelChoiceField(
         queryset=Project.objects.all(),
-        widget=forms.HiddenInput
+        widget=forms.HiddenInput()
     )
 
     task_type = forms.ChoiceField(
         choices=Task.TYPES,
-        widget=forms.HiddenInput
+        widget=forms.HiddenInput()
     )
 
     parent_task = forms.ModelChoiceField(
         queryset=Task.objects.all(),
-        widget=forms.HiddenInput,
+        widget=forms.HiddenInput(),
         required=False
     )
