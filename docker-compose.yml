@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 services:
   database:
     build: docker/psql
@@ -21,6 +21,8 @@ services:
       - redis
     env_file:
       - .env
+    volumes:
+      - ./sandbox:/sandbox/sandbox
   redis:
     image: "redis:latest"
     restart: unless-stopped

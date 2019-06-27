@@ -1,10 +1,10 @@
 from django.db import models
+from django.db.models import Q
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import JSONField
 from django.forms.models import model_to_dict
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 
@@ -28,13 +28,12 @@ class ProjectManager(models.Manager):
 
         project = get_object_or_404(
             Project.objects.prefetch_related('tasks', 'team', 'repository'),
-            owner__email=owner_email,
-            name=project_name,
+            Q(owner__email=owner_email),
+            Q(name=project_name),
+            Q(public=True) | Q(team=user),
         )
 
-        if project.public or user in project.team.all():
-            return project
-        raise Http404
+        return project
 
 
 class Project(models.Model):
@@ -103,12 +102,13 @@ class Task(models.Model):
 
     project = models.ForeignKey(
         to='core.Project',
-        related_name='tasks'
-        , on_delete=models.CASCADE
+        related_name='tasks',
+        on_delete=models.CASCADE
     )
     assignees = models.ManyToManyField(
         to='user.User',
-        related_name='tasks'
+        related_name='tasks',
+        blank=True
     )
     branches = models.ManyToManyField(
         to='github_integration.Branch',
