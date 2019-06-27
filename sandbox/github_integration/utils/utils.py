@@ -4,6 +4,8 @@ from github_integration.models import Branch
 
 
 def create_branch(user, name, url, repository, commit_sha):
+    """Gets tree of a branch and creates Branch object"""
+
     new_branch = Branch(
         name=name,
         url=url,
@@ -28,6 +30,13 @@ def create_branch(user, name, url, repository, commit_sha):
 
 
 def parse_tree(subtree, level=1, parent=None, branch=None):
+    """
+    Parses a repository tree that was received from GitHub API and creates Content objects.
+
+    Logic in this method is required, because GitHub API provides tree in a flat format,
+    and we need to build a hierarchy from it.
+    """
+
     for i, node in enumerate(subtree):
         if node.get('processed') is None:
             path = node.get('path').split('/')

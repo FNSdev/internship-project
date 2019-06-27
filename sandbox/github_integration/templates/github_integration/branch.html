@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+{% endblock %}
+
+{% block main %}
+    <ul class="list-group">
+        {% if type == 'dir' %}
+            {% for content in data %}
+                {% if content.get_type_display == 'dir' %}
+                    <li class="list-group-item list-group-item-warning">
+                        <a href="{{ request.path }}/{{ content.name }}">{{ content.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">
+                        <a href="{{ request.path }}/{{ content.name }}">{{ content.name }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div align="left">
+                <textarea id="code">{{ data }}</textarea>
+            </div>
+        {% endif %}
+    </ul>
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'js/codemirror/codemirror.js' %}"></script>
+    <script src="{% static 'js/codemirror/mode/python/python.js' %}"></script>
+    <script>
+        CodeMirror.fromTextArea(document.getElementById("code"), {
+            lineNumbers: true,
+            mode: 'python',
+            readOnly: 'true',
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% endblock %}
+
+{% block sidebar_left %}
+    <div class="card mt-3" style="width: 18rem;">
+        <h5 class="card-header">
+            Task # {{ task.task_id }}
+            <p>{{ task.name }}</p>
+        </h5>
+        <div class="card-body" align="left">
+            <h5 class="card-title">Status: {{ task.get_status_display }}</h5>
+            <h5 class="card-title">Progress: {{ task.get_progress }} %</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Type : {{ task.get_task_type_display }}</h6>
+            <p class="card-text">{{ task.description }}</p>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for branch in branches %}
+                <li class="list-group-item">
+                    <a href="{% url 'github_integration:branch' id=branch.repository.id commit_sha=branch.commit_sha %}">{{ branch.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="card-body" align="left">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#editModal">Edit</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit Task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="update-form">
+                        {{ task_form|crispy }}
+                    </form>
+                    <div class="mt-3" id="update-form-errors"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" id="save-changes-button">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% if task.task_type == task.TASK %}
+        <h3>Sub Tasks</h3>
+        <style>
+            td {
+                text-align: center
+            }
+
+            th {
+                text-align: center
+            }
+        </style>
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Priority</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Deadline</th>
+                    <th scope="col">Branches</th>
+                </tr>
+            </thead>
+            <tbody id="tasks"></tbody>
+        </table>
+        <button id="load-more-button" class="btn btn-primary">Load more</button>
+        <button class="btn btn-primary" data-toggle="modal" data-target="#createSubTaskModal">Create SubTask</button>
+
+        <div class="modal fade" id="createSubTaskModal" tabindex="-1" role="dialog" aria-labelledby="createSubTaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="createSubTaskModalLabel">Create new Sub Task</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="create-sub-task-form">
+                            {{ sub_task_form|crispy }}
+                        </form>
+                        <div id="create-sub-task-errors"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button class="btn btn-success" id="create-sub-task-button">Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block sidebar_right %}
+
+{% endblock %}
+
+{% block extrajs %}
+    <script type="module" src="{% static 'js/core/tasks/refresh_sub_tasks.js' %}"></script>
+    <script type="module" src="{% static 'js/core/tasks/create_sub_task.js' %}"></script>
+    <script type="module" src="{% static 'js/core/tasks/update_task.js' %}"></script>
+    <script>
+        jQuery(document).ready(function () {
+            jQuery('#save-changes-button').click(function () {
+                jQuery('#update-form').submit()
+            });
+            jQuery('#create-sub-task-button').click(function () {
+                jQuery('#create-sub-task-form').submit()
+            })
+        })
+    </script>
+{% endblock %}

@@ -6,6 +6,8 @@ from github_integration.utils.decorators import safe_request
 
 
 def get_login_url() -> str:
+    """Returns GitHub login url for this application"""
+
     params = {
         'client_id': settings.GITHUB_CLIENT_ID,
         'scope': settings.GITHUB_SCOPE
@@ -16,6 +18,8 @@ def get_login_url() -> str:
 
 @safe_request
 def get_username(token: str):
+    """Return user GitHub username"""
+
     response = requests.get(
         settings.GITHUB_USER_URL,
         headers={
@@ -27,6 +31,8 @@ def get_username(token: str):
 
 @safe_request
 def create_token(code: str):
+    """Creates GitHub OAuth token. Code from GitHub login callback is required"""
+
     response = requests.post(
         settings.GITHUB_GET_TOKEN_URL,
         json={
@@ -43,7 +49,9 @@ def create_token(code: str):
 
 
 @safe_request
-def is_token_valid(token: str) -> bool:
+def is_token_valid(token: str):
+    """Checks if user's GitHub token is valid. If it's not, response status code will be 404"""
+
     url = '/'.join((settings.GITHUB_APPLICATIONS_URL, settings.GITHUB_CLIENT_ID, 'tokens', token))
     response = requests.get(
         url,

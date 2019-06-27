@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+    {{ source }} Repositories
+{% endblock %}
+
+{% block main %}
+    <h4>
+        Your {{ source }} repositories
+        <ul>
+            {% for repo in repositories %}
+                <div class="card mt-3" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ repo.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ repo.id }}</h6>
+                        <p class="card-text">{{ repo.description }}</p>
+                        <a href="{{ repo.url }}" class="card-link">View on GitHub</a>
+                        <button class="btn btn-success add" id="{{ repo.name }}">Add to your account</button>
+                     </div>
+                </div>
+            {% endfor %}
+        </ul>
+    </h4>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="module" src="{% static 'js/github_integration/add_repository.js' %}"></script>
+{% endblock %}

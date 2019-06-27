@@ -7,17 +7,23 @@
 {% block sidebar_left %}
     <ul class="list-group">
         <li class="list-group-item">
-            <a href="{% url 'user:repositories' %}">Your Repositories</a>
+            <a href="{% url 'core:projects' %}">Projects</a>
         </li>
         <li class="list-group-item">
-            <a href="{% url 'user:github_repositories' %}">GitHub Repositories</a>
+            <a href="{% url 'core:invites' %}">Invites</a>
+        </li>
+        <li class="list-group-item">
+            <a href="{% url 'github_integration:repositories' %}">Repositories</a>
+        </li>
+        <li class="list-group-item">
+            <a href="{% url 'github_integration:github_repositories' %}">GitHub Repositories</a>
         </li>
     </ul>
 {% endblock %}
 
 
 {% block main %}
-    <h1>Your Profile</h1>
+    <h1>Hello, {{ request.user }}</h1>
     {% if github_token_valid %}
         <h3>Your github token is valid</h3>
     {% else %}

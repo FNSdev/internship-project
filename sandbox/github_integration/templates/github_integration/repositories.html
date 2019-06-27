@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Your Repositories
+{% endblock %}
+
+{% block main %}
+    <h4>
+        Your repositories
+        <ul>
+            {% for repo in repositories %}
+                <div class="card mt-3" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ repo.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ repo.id }}</h6>
+                        <p class="card-text">{{ repo.description }}</p>
+                        <p>
+                            <a href="{% url 'github_integration:get_repository_tree' id=repo.id %}" class="card-link">View tree</a>
+                        </p>
+                        <p>
+                            <a href="{{ repo.url }}" class="card-link">View on GitHub</a>
+                        </p>
+                        <p>
+                            <a href="{% url 'github_integration:repository' id=repo.id %}" class="btn btn-success add">View content</a>
+                        </p>
+                     </div>
+                </div>
+            {% endfor %}
+        </ul>
+    </h4>
+{% endblock %}

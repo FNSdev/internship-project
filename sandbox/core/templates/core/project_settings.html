@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {{ project.name }} Settings
+{% endblock %}
+
+{% block sidebar_left %}
+    <h3>Team</h3>
+    {% for user in project.team.all %}
+        <div class="card mt-3" id="{{ user.email }}">
+            <div class="card-body">
+                <h4>{{ user.email }}</h4>
+                <button class="btn btn-danger remove">Remove from team</button>
+                <p class="card-subtitle mb-2 text-muted mt-1">(and cancel invitation)</p>
+            </div>
+        </div>
+    {% endfor %}
+    <div class="mt-3">
+        <form id="invite-user-form">
+            {% csrf_token %}
+            {{ invite_user_form|crispy }}
+            <button class="btn btn-success mt-3">
+                Invite
+            </button>
+        </form>
+    </div>
+    <div class="mt-3" id="invite-user-errors"></div>
+{% endblock %}
+
+{% block main %}
+    <h3>Tasks</h3>
+    {% include 'core/includes/tasks.html' %}
+
+    <button class="btn btn-primary" data-toggle="modal" data-target="#createTaskModal">New Task</button>
+
+    <div class="modal fade" id="createTaskModal" tabindex="-1" role="dialog" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTaskModalLabel">Create New Task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-task-form">
+                        {{ task_form|crispy }}
+                    </form>
+                    <div class="mt-3" id="create-task-errors"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" id="create-task-button">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+{% block sidebar_right %}
+{% endblock %}
+
+{% block extrajs %}
+    <script type="module" src="{% static 'js/core/projects/invite_user_to_project.js' %}"></script>
+    <script type="module" src="{% static 'js/core/projects/remove_user_from_team.js' %}"></script>
+    <script type="module" src="{% static 'js/core/tasks/create_task.js' %}"></script>
+    <script type="module" src="{% static 'js/core/tasks/refresh_all_tasks.js' %}"></script>
+    <script>
+        jQuery(document).ready(function () {
+            jQuery('#create-task-button').click(function () {
+                jQuery('#create-task-form').submit()
+            })
+        })
+    </script>
+{% endblock %}

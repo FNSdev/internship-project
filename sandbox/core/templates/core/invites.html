@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+    Invites
+{% endblock %}
+
+{% block main %}
+    {% for invite in received_invites %}
+        <div class="card mt-3" style="width: 18rem;">
+            <h5 class="card-header">
+            {{ invite.project.name }}
+            </h5>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Owner: {{ invite.project.owner }}</h6>
+                <p class="card-text">{{ invite.project.description }}</p>
+                <p class="card-text status">Status: {{ invite.get_status_display }}</p>
+                <div id="{{ invite.id }}">
+                    <btn class="btn btn-success accept">Accept</btn>
+                    <btn class="btn btn-danger decline">Decline</btn>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block sidebar_left %}
+    {% for invite in sent_invites %}
+        <div id="{{ invite.id }}" class="card mt-3" style="width: 18rem;">
+            <div class="card-body">
+                <h5 class="card-title">{{ invite.project.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">Sent to: {{ invite.to }}</h6>
+                <p class="card-text">Status: {{ invite.get_status_display }}</p>
+                <btn class="btn btn-danger cancel">Cancel</btn>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block extrajs %}
+    <script type="module" src="{% static 'js/core/invites/cancel_invite.js' %}"></script>
+    <script type="module" src="{% static 'js/core/invites/accept_invite.js' %}"></script>
+    <script type="module" src="{% static 'js/core/invites/decline_invite.js' %}"></script>
+{% endblock %}

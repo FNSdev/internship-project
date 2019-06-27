@@ -13,6 +13,7 @@
         <form method="post" action="{% url 'user:login' %}">
             {% csrf_token %}
             {{ form|crispy }}
+            <input type="hidden" name="next" value="{{ request.GET.next }}"/>
             <button type="submit" class="btn-lg btn-success mt-3">Login</button>
         </form>
     {% endif %}

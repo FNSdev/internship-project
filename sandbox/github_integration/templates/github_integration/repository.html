@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% endblock %}
+
+{% block main %}
+    <ul class="list-group">
+        {% for branch in branches %}
+            <li class="list-group-item">
+                <p>
+                    <a href="{% url 'github_integration:branch' id=branch.repository.id commit_sha=branch.commit_sha %}">{{ branch.name }}</a>
+                </p>
+                <p>{{ branch.commit_sha }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
