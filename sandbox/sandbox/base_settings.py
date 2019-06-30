@@ -10,6 +10,7 @@ INSTALLED_APPS = [
     'core',
     'user',
     'github_integration',
+    'api',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'django.contrib.postgres',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [

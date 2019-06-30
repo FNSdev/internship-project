@@ -7,6 +7,7 @@ from django.contrib.postgres.fields import JSONField
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
+from django.utils.text import slugify
 
 
 class ProjectManager(models.Manager):
@@ -50,7 +51,7 @@ class Project(models.Model):
         to='user.User',
         related_name='participating_projects'
     )
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, unique=True)
     description = models.TextField(blank=True)
     public = models.BooleanField(default=False)
     auto_sync_with_github = models.BooleanField(default=False)
@@ -58,10 +59,9 @@ class Project(models.Model):
 
     objects = ProjectManager()
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        self.name = '-'.join(self.name.split())
-        super().save(force_insert, force_update, using, update_fields)
+    def save(self, *args, **kwargs):
+        self.name = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.owner} : {self.name}'
