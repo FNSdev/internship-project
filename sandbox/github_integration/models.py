@@ -1,4 +1,6 @@
 from django.db import models
+from github_integration.github_client_api.exceptions import GitHubApiRequestException
+from github_integration.github_client_api.parsers import parse_tree
 
 
 class Content(models.Model):
@@ -78,11 +80,40 @@ class Repository(models.Model):
         return self.name
 
 
+class BranchManager(models.Manager):
+    def create_branch_with_content(self, github_client, github_username, branch_name, url, repository, commit_sha):
+        """
+        Creates branch and populates it with content
+        Exceptions need to be caught
+        """
+
+        new_branch = Branch(
+            name=branch_name,
+            url=url,
+            repository=repository,
+            commit_sha=commit_sha
+        )
+        new_branch.save()
+
+        data = github_client.get_repository_tree(
+            github_username,
+            repository.name,
+            commit_sha
+        )
+
+        tree = data.get('tree')
+        parse_tree(tree, branch=new_branch)
+        return new_branch
+
+
+
 class Branch(models.Model):
     name = models.CharField(max_length=150)
     url = models.URLField()
     commit_sha = models.CharField(max_length=50)
     repository = models.ForeignKey(to=Repository, related_name='branches', on_delete=models.CASCADE)
+
+    objects = BranchManager()
 
     def get_content(self, content=None):
         tree = []
