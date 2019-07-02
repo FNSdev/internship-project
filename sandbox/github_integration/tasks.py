@@ -9,7 +9,6 @@ from core.models import Project
 
 
 @shared_task
-@transaction.atomic
 def create_repository_task(user_email, repository_name):
     """Creates new repository"""
 
@@ -33,17 +32,18 @@ def create_repository_task(user_email, repository_name):
         )
         repository.save()
 
-        # Get repository branches
-        branches = client.get_repository_branches(user.github_username, repository_name)
-        for br in branches:
-            name = br.get('name')
-            _ = Branch.objects.create_branch_with_content(
-                user=user,
-                name=br['name'],
-                url='/'.join((repository.url, 'tree', name)),
-                repository=repository,
-                commit_sha=br['commit']['sha'],
-            )
+        with transaction.atomic():
+            # Get repository branches
+            branches = client.get_repository_branches(user.github_username, repository_name)
+            for br in branches:
+                name = br.get('name')
+                _ = Branch.objects.create_branch_with_content(
+                    user=user,
+                    name=br['name'],
+                    url='/'.join((repository.url, 'tree', name)),
+                    repository=repository,
+                    commit_sha=br['commit']['sha'],
+                )
 
         repository.status = Repository.UPDATED
         repository.save()
@@ -52,10 +52,10 @@ def create_repository_task(user_email, repository_name):
         # TODO write to log
         print('Request Exception')
         # logger.log(e.message + repository.name)
+        raise GitHubApiRequestException
 
 
-@shared_task
-@transaction.atomic
+@shared_task(ignore_result=True)
 def update_repository_task(user_email, repository_id):
     """Updates content of existing repository"""
 
@@ -69,83 +69,83 @@ def update_repository_task(user_email, repository_id):
     elif repository.status == repository.DELETED_ON_GITHUB:
         return f'{repository.name} was deleted from GitHub'
 
-    # TODO think about transaction atomic and changing status
-
     repository.status = Repository.UPDATE_IN_PROGRESS
     repository.save()
 
     user = User.objects.get(email=user_email)
     client = GitHubClient(user.github_token)
 
-    try:
-        # Check if repository still exists. If not, change it status to DELETED_ON_GITHUB
-        _ = client.get_repository_info(user.github_username, repository.name)
-    except GitHubApiNotFound:
-        # TODO write to log
-        repository.status = repository.DELETED_ON_GITHUB
-        repository.save()
+    with transaction.atomic():
+        try:
+            # Check if repository still exists. If not, change it status to DELETED_ON_GITHUB
+            _ = client.get_repository_info(user.github_username, repository.name)
+        except GitHubApiNotFound:
+            # TODO write to log
+            repository.status = repository.DELETED_ON_GITHUB
+            repository.save()
 
-    try:
-        branches = client.get_repository_branches(user.github_username, repository.name)
-        current_branches_set = set(repository.branches.all())
-        actual_branches_set = set()
+        try:
+            branches = client.get_repository_branches(user.github_username, repository.name)
+            current_branches_set = set(repository.branches.all())
+            actual_branches_set = set()
 
-        for branch in branches:
-            commit_sha = branch['commit']['sha']
-            try:
-                # If branch is not new, check if we need to update branch by comparing last commit's sha
-                existing_branch = repository.branches.get(name=branch.get('name'))
-                if existing_branch.commit_sha != commit_sha:
-                    print(f'need to update branch {existing_branch.name}')
+            for branch in branches:
+                commit_sha = branch['commit']['sha']
+                try:
+                    # If branch is not new, check if we need to update branch by comparing last commit's sha
+                    existing_branch = repository.branches.get(name=branch.get('name'))
+                    if existing_branch.commit_sha != commit_sha:
+                        print(f'need to update branch {existing_branch.name}')
+                        new_branch = Branch.objects.create_branch_with_content(
+                            client,
+                            user.github_username,
+                            existing_branch.name,
+                            existing_branch.url,
+                            repository,
+                            commit_sha
+                        )
+                        actual_branches_set.add(new_branch)
+                    else:
+                        actual_branches_set.add(existing_branch)
+                except Branch.DoesNotExist:
+                    # If branch is new, create new Branch object
                     new_branch = Branch.objects.create_branch_with_content(
                         client,
                         user.github_username,
-                        existing_branch.name,
-                        existing_branch.url,
+                        branch.get('name'),
+                        '/'.join((repository.url, 'tree', branch.get('name'))),
                         repository,
                         commit_sha
                     )
                     actual_branches_set.add(new_branch)
-                else:
-                    actual_branches_set.add(existing_branch)
-            except Branch.DoesNotExist:
-                # If branch is new, create new Branch object
-                new_branch = Branch.objects.create_branch_with_content(
-                    client,
-                    user.github_username,
-                    branch.get('name'),
-                    '/'.join((repository.url, 'tree', branch.get('name'))),
-                    repository,
-                    commit_sha
-                )
-                actual_branches_set.add(new_branch)
 
-        # If everything is OK, delete obsolete branches
-        branches_to_remove = current_branches_set.difference(actual_branches_set)
-        for branch in branches_to_remove:
-            branch.delete()
+            # If everything is OK, delete obsolete branches
+            branches_to_remove = current_branches_set.difference(actual_branches_set)
+            for branch in branches_to_remove:
+                branch.delete()
 
-        try:
-            # If this repository has project with auto-sync option, update it's tasks
-            project = repository.project
-            if project.auto_sync_with_github:
-                for task in project.tasks.all():
-                    branches = repository.branches.filter(name__icontains=f'task_{task.task_id}/')
-                    task.branches.add(*branches)
-                    task.save()
-        except Project.DoesNotExist:
-            pass
+            try:
+                # If this repository has project with auto-sync option, update it's tasks
+                project = repository.project
+                if project.auto_sync_with_github:
+                    for task in project.tasks.all():
+                        branches = repository.branches.filter(name__icontains=f'task_{task.task_id}/')
+                        task.branches.add(*branches)
+                        task.save()
+            except Project.DoesNotExist:
+                pass
 
-        # Save repository
-        repository.status = Repository.UPDATED
-        repository.save()
+        except GitHubApiRequestException as e:
+            # TODO write to log
+            print(e.message)
+            raise GitHubApiRequestException
 
-    except GitHubApiRequestException as e:
-        # TODO write to log
-        print(e.message)
+    # Save repository
+    repository.status = Repository.UPDATED
+    repository.save()
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def update_repositories_task():
     """Updates all saved repositories"""
 
