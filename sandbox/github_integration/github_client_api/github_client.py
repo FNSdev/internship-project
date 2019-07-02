@@ -28,7 +28,7 @@ def _github_api_request(func):
         url = None
         try:
             response_status_code, data, url = func(*args, **kwargs)
-            if response_status_code == 403:
+            if response_status_code == 403 or (isinstance(data, dict) and data.get('message') == 'Bad credentials'):
                 raise GitHubApiAccessDenied(request_url=url)
             elif response_status_code == 404:
                 raise GitHubApiNotFound(request_url=url)

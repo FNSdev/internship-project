@@ -14,6 +14,7 @@ def create_repository_task(user_email, repository_name):
 
     user = User.objects.get(email=user_email)
     client = GitHubClient(user.github_token)
+    repository = None
     try:
         # Get repository info
         repo = client.get_repository_info(user.github_username, repository_name)
@@ -45,14 +46,16 @@ def create_repository_task(user_email, repository_name):
                     commit_sha=br['commit']['sha'],
                 )
 
-        repository.status = Repository.UPDATED
-        repository.save()
-
     except GitHubApiRequestException as e:
         # TODO write to log
         print('Request Exception')
         # logger.log(e.message + repository.name)
         raise GitHubApiRequestException
+
+    finally:
+        if repository is not None:
+            repository.status = Repository.UPDATED
+            repository.save()
 
 
 @shared_task(ignore_result=True)
@@ -75,16 +78,21 @@ def update_repository_task(user_email, repository_id):
     user = User.objects.get(email=user_email)
     client = GitHubClient(user.github_token)
 
-    with transaction.atomic():
-        try:
-            # Check if repository still exists. If not, change it status to DELETED_ON_GITHUB
-            _ = client.get_repository_info(user.github_username, repository.name)
-        except GitHubApiNotFound:
-            # TODO write to log
-            repository.status = repository.DELETED_ON_GITHUB
-            repository.save()
+    try:
+        # Check if repository still exists. If not, change it status to DELETED_ON_GITHUB
+        _ = client.get_repository_info(user.github_username, repository.name)
+    except GitHubApiNotFound:
+        # TODO write to log
+        repository.status = repository.DELETED_ON_GITHUB
+        repository.save()
+        return
+    except GitHubApiRequestException as e:
+        print(f'{e.request_url} : {e.message}')
+        repository.status = repository.UPDATED
+        repository.save()
 
-        try:
+    try:
+        with transaction.atomic():
             branches = client.get_repository_branches(user.github_username, repository.name)
             current_branches_set = set(repository.branches.all())
             actual_branches_set = set()
@@ -135,14 +143,15 @@ def update_repository_task(user_email, repository_id):
             except Project.DoesNotExist:
                 pass
 
-        except GitHubApiRequestException as e:
-            # TODO write to log
-            print(e.message)
-            raise GitHubApiRequestException
+    except GitHubApiRequestException as e:
+        # TODO write to log
+        print(e.message)
+        raise GitHubApiRequestException
 
-    # Save repository
-    repository.status = Repository.UPDATED
-    repository.save()
+    finally:
+        # Save repository
+        repository.status = Repository.UPDATED
+        repository.save()
 
 
 @shared_task(ignore_result=True)
