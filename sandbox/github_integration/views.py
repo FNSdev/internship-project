@@ -28,8 +28,6 @@ class GetCeleryTaskStatusView(LoginRequiredMixin, views.View):
         task = AsyncResult(task_id)
         if task.ready():
             message = task.get()
-            if message is None:
-                message = 'Success!'
             return JsonResponse({'status': 'ready', 'message': message})
         return JsonResponse({'status': 'not-ready'})
 

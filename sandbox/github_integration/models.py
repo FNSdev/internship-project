@@ -1,5 +1,4 @@
 from django.db import models
-from github_integration.github_client_api.exceptions import GitHubApiRequestException
 from github_integration.github_client_api.parsers import parse_tree
 
 
@@ -35,10 +34,12 @@ class Content(models.Model):
 class Repository(models.Model):
     UPDATED = 0
     UPDATE_IN_PROGRESS = 1
-    DELETED_ON_GITHUB = 2
+    UPDATE_FAILED = 2
+    DELETED_ON_GITHUB = 3
 
     STATUSES = (
         (UPDATED, 'updated'),
+        (UPDATE_FAILED, 'update_failed'),
         (UPDATE_IN_PROGRESS, 'update_in_progress'),
         (DELETED_ON_GITHUB, 'deleted_on_github'),
     )
@@ -104,7 +105,6 @@ class BranchManager(models.Manager):
         tree = data.get('tree')
         parse_tree(tree, branch=new_branch)
         return new_branch
-
 
 
 class Branch(models.Model):

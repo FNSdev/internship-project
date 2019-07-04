@@ -15,6 +15,7 @@ def create_repository_task(user_email, repository_name):
     user = User.objects.get(email=user_email)
     client = GitHubClient(user.github_token)
     repository = None
+    error = None
     try:
         # Get repository info
         repo = client.get_repository_info(user.github_username, repository_name)
@@ -22,7 +23,7 @@ def create_repository_task(user_email, repository_name):
         # If repository was already added, return
         if Repository.objects.filter(id=repo['id']).exists():
             # TODO write to log
-            return f'{repository_name} already exists'
+            return
 
         repository = Repository(
             id=repo['id'],
@@ -33,14 +34,15 @@ def create_repository_task(user_email, repository_name):
         )
         repository.save()
 
+        # Get repository branches
+        branches = client.get_repository_branches(user.github_username, repository_name)
         with transaction.atomic():
-            # Get repository branches
-            branches = client.get_repository_branches(user.github_username, repository_name)
             for br in branches:
                 name = br.get('name')
                 _ = Branch.objects.create_branch_with_content(
-                    user=user,
-                    name=br['name'],
+                    github_client=client,
+                    github_username=user.github_username,
+                    branch_name=br['name'],
                     url='/'.join((repository.url, 'tree', name)),
                     repository=repository,
                     commit_sha=br['commit']['sha'],
@@ -50,15 +52,19 @@ def create_repository_task(user_email, repository_name):
         # TODO write to log
         print('Request Exception')
         # logger.log(e.message + repository.name)
-        raise GitHubApiRequestException
+        error = e
+        raise e
 
     finally:
         if repository is not None:
-            repository.status = Repository.UPDATED
+            repository.status = Repository.UPDATED if not error else Repository.UPDATE_FAILED
             repository.save()
+            return repository.get_status_display()
+        else:
+            return f'An error occurred when creating {repository_name} repository'
 
 
-@shared_task(ignore_result=True)
+@shared_task
 def update_repository_task(user_email, repository_id):
     """Updates content of existing repository"""
 
@@ -88,9 +94,11 @@ def update_repository_task(user_email, repository_id):
         return
     except GitHubApiRequestException as e:
         print(f'{e.request_url} : {e.message}')
-        repository.status = repository.UPDATED
+        repository.status = repository.UPDATE_FAILED
         repository.save()
+        return
 
+    error = None
     try:
         with transaction.atomic():
             branches = client.get_repository_branches(user.github_username, repository.name)
@@ -105,12 +113,12 @@ def update_repository_task(user_email, repository_id):
                     if existing_branch.commit_sha != commit_sha:
                         print(f'need to update branch {existing_branch.name}')
                         new_branch = Branch.objects.create_branch_with_content(
-                            client,
-                            user.github_username,
-                            existing_branch.name,
-                            existing_branch.url,
-                            repository,
-                            commit_sha
+                            github_client=client,
+                            github_username=user.github_username,
+                            branch_name=existing_branch.name,
+                            url=existing_branch.url,
+                            repository=repository,
+                            commit_sha=commit_sha,
                         )
                         actual_branches_set.add(new_branch)
                     else:
@@ -118,12 +126,12 @@ def update_repository_task(user_email, repository_id):
                 except Branch.DoesNotExist:
                     # If branch is new, create new Branch object
                     new_branch = Branch.objects.create_branch_with_content(
-                        client,
-                        user.github_username,
-                        branch.get('name'),
-                        '/'.join((repository.url, 'tree', branch.get('name'))),
-                        repository,
-                        commit_sha
+                        github_client=client,
+                        github_username=user.github_username,
+                        branch_name=branch.get('name'),
+                        url='/'.join((repository.url, 'tree', branch.get('name'))),
+                        repository=repository,
+                        commit_sha=commit_sha,
                     )
                     actual_branches_set.add(new_branch)
 
@@ -146,12 +154,14 @@ def update_repository_task(user_email, repository_id):
     except GitHubApiRequestException as e:
         # TODO write to log
         print(e.message)
-        raise GitHubApiRequestException
+        error = e
+        raise e
 
     finally:
         # Save repository
-        repository.status = Repository.UPDATED
+        repository.status = Repository.UPDATED if not error else Repository.UPDATE_FAILED
         repository.save()
+        return repository.get_status_display()
 
 
 @shared_task(ignore_result=True)

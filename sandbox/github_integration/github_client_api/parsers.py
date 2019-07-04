@@ -26,9 +26,9 @@ def parse_tree(subtree, level=1, parent=None, branch=None):
                     type=type_
                 )
 
-                if not branch:
+                if branch:
                     content.branch = branch
-                if not parent:
+                if parent:
                     content.parent = parent
                 content.save()
 
