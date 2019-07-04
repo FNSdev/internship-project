@@ -24,7 +24,11 @@ class ProjectsView(LoginRequiredMixin, views.View):
         user = request.user
         owned_projects = user.owned_projects.all()
         participating_projects = user.participating_projects.all()
-        form = ProjectForm()
+        form = ProjectForm(
+            initial={
+                'owner': request.user,
+            },
+        )
         form.fields['repository'].queryset = user.repositories.all()
 
         ctx = {
@@ -38,14 +42,8 @@ class ProjectsView(LoginRequiredMixin, views.View):
     def post(self, request):
         form = ProjectForm(request.POST)
         if form.is_valid():
-            data = form.cleaned_data
-            project = Project(
-                name=data['name'],
-                description=data['description'],
-                repository=data['repository'],
-                owner=request.user)
-            project.save()
-            project.team.add(request.user)
+            project = form.save()
+            project.team.add(project.owner)
             project.save()
             return JsonResponse({
                 'message': 'Success',
@@ -70,15 +68,10 @@ class ProjectView(LoginRequiredMixin, views.View):
         project_owner = kwargs['user']
         project = Project.objects.get_project_or_404(project_name, project_owner, user)
 
-        team = project.team.all()
-        if user not in team:
-            raise Http404
-
         user_tasks = project.tasks.filter(assignees=user)
 
         ctx = {
             'project': project,
-            'team': team,
             'user_tasks': user_tasks,
             'is_owner': user.email == project_owner,
         }

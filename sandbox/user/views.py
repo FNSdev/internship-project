@@ -7,7 +7,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import resolve, Resolver404
 from user.forms import RegisterForm, LoginForm
 from user.models import User
-from github_integration.utils.token import is_token_valid
+from github_integration.github_client_api.exceptions import GitHubApiRequestException, GitHubApiNotFound
+from github_integration.github_client_api.github_client import GitHubClient
 
 
 class RegisterView(views.View):
@@ -58,11 +59,13 @@ class LoginView(views.View):
 class ProfileView(LoginRequiredMixin, views.View):
     def get(self, request):
         user = request.user
-        error, github_token_valid = is_token_valid(user.github_token)
-        if not error:
+        github_token_valid = False
+        client = GitHubClient(user.github_token)
+        try:
+            github_token_valid = client.is_token_valid()
             messages.add_message(request, messages.INFO, 'Token was checked successfully')
-        else:
-            messages.add_message(request, messages.WARNING, f'An error occurred when checking token : {error}')
+        except GitHubApiRequestException as e:
+            messages.add_message(request, messages.WARNING, f'An error occurred when checking token : {e.message}')
 
         ctx = {
             'github_token_valid': github_token_valid,
