@@ -13,7 +13,6 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     '0.0.0.0',
-    '281a13f4.ngrok.io',
 ]
 
 # Database

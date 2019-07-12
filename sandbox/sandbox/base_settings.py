@@ -72,7 +72,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Minsk'
 
 USE_I18N = True
 
@@ -120,5 +120,32 @@ CELERY_BEAT_SCHEDULE = {
     'update_repositories': {
         'task': 'github_integration.tasks.update_repositories_task',
         'schedule': 60,
+    }
+}
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'github_api_client_formatter': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        }
+    },
+    'handlers': {
+        'github_api_client_handler': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.getenv('GITHUB_API_CLIENT_LOG'),
+            'formatter': 'github_api_client_formatter',
+        }
+    },
+    'loggers': {
+        'sandbox.github_api_client': {
+            'handlers': ['github_api_client_handler'],
+            'level': 'INFO',
+        }
     }
 }
