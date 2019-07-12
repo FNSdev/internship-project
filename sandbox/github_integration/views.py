@@ -1,3 +1,4 @@
+import logging
 from django import views
 from django.shortcuts import reverse, render, get_object_or_404
 from django.core.exceptions import PermissionDenied
@@ -11,6 +12,9 @@ from github_integration.github_client_api.parsers import parse_path
 from github_integration.tasks import create_repository_task
 from github_integration.models import Repository
 from celery.result import AsyncResult
+
+
+logger = logging.getLogger('sandbox.github_api_client')
 
 
 class AddRepositoryView(LoginRequiredMixin, views.View):
@@ -53,9 +57,9 @@ class GetGithubTokenView(LoginRequiredMixin, views.View):
             user.save()
 
             messages.info(request, 'Github token and username were added successfully')
-            # TODO write to log
-        except GitHubApiRequestException:
-            messages.warning(request, 'Request Exception')
+        except GitHubApiRequestException as e:
+            logger.error(f'{e.request_url} : {e.message}')
+            messages.warning(request, e.message)
 
         return HttpResponseRedirect(reverse('user:profile'))
 
@@ -81,6 +85,7 @@ class GithubRepositoriesView(LoginRequiredMixin, views.View):
     def get(self, request):
         user = request.user
         client = GitHubClient(user.github_token)
+        ctx = {}
         try:
             repos = client.get_repository_list()
             repositories = []
@@ -91,14 +96,12 @@ class GithubRepositoriesView(LoginRequiredMixin, views.View):
                     'description': repo.get('description'),
                     'id': repo.get('id')
                 })
+            ctx['repositories'] = repositories
+        except GitHubApiRequestException as e:
+            logger.error(f'{e.request_url} : {e.message}')
+            messages.warning(request, e.message)
 
-            ctx = {
-                'repositories': repositories
-            }
-            return render(request, 'github_integration/remote_repositories.html', context=ctx)
-            # TODO write to log
-        except GitHubApiRequestException:
-            messages.warning(request, 'Request Exception')
+        return render(request, 'github_integration/remote_repositories.html', context=ctx)
 
 
 class RepositoriesView(LoginRequiredMixin, views.View):

@@ -1,7 +1,11 @@
 import base64
+import logging
 from django.shortcuts import get_object_or_404
 from github_integration.github_client_api.exceptions import GitHubApiRequestException
 from github_integration.github_client_api.github_client import GitHubClient
+
+
+logger = logging.getLogger('sandbox.github_api_client')
 
 
 def parse_tree(subtree, level=1, parent=None, branch=None):
@@ -65,9 +69,8 @@ def parse_path(token, path, branch):
                     data = text.decode('utf-8')
                 else:
                     pass
-            except GitHubApiRequestException:
-                # TODO write to log
-                print('Request Exception')
+            except GitHubApiRequestException as e:
+                logger.error(f'{e.request_url} : {e.message}')
         else:
             data = data.content.all()
     else:

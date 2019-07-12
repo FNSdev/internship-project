@@ -1,4 +1,6 @@
 from __future__ import absolute_import, unicode_literals
+
+import logging
 from celery import shared_task
 from django.db import transaction
 from github_integration.github_client_api.exceptions import GitHubApiRequestException, GitHubApiNotFound
@@ -6,6 +8,9 @@ from github_integration.github_client_api.github_client import GitHubClient
 from github_integration.models import Repository, Branch
 from user.models import User
 from core.models import Project
+
+
+logger = logging.getLogger('sandbox.github_api_client')
 
 
 @shared_task
@@ -22,7 +27,6 @@ def create_repository_task(user_email, repository_name):
 
         # If repository was already added, return
         if Repository.objects.filter(id=repo['id']).exists():
-            # TODO write to log
             return
 
         repository = Repository(
@@ -49,9 +53,7 @@ def create_repository_task(user_email, repository_name):
                 )
 
     except GitHubApiRequestException as e:
-        # TODO write to log
-        print('Request Exception')
-        # logger.log(e.message + repository.name)
+        logger.error(f'{e.request_url} : {e.message}')
         error = e
         raise e
 
@@ -61,7 +63,7 @@ def create_repository_task(user_email, repository_name):
             repository.save()
             return repository.get_status_display()
         else:
-            return f'An error occurred when creating {repository_name} repository'
+            return f'{repository_name} already exists'
 
 
 @shared_task
@@ -72,7 +74,6 @@ def update_repository_task(user_email, repository_id):
 
     # Check if repository update is not in progress already and
     # if repository was deleted from GitHub
-    # TODO write to log
     if repository.status == repository.UPDATE_IN_PROGRESS:
         return f'{repository.name} update was in progress already'
     elif repository.status == repository.DELETED_ON_GITHUB:
@@ -88,15 +89,15 @@ def update_repository_task(user_email, repository_id):
         # Check if repository still exists. If not, change it status to DELETED_ON_GITHUB
         _ = client.get_repository_info(user.github_username, repository.name)
     except GitHubApiNotFound:
-        # TODO write to log
+        logger.warning(f'{repository} was deleted on GitHub')
         repository.status = repository.DELETED_ON_GITHUB
         repository.save()
-        return
+        return repository.get_status_display()
     except GitHubApiRequestException as e:
-        print(f'{e.request_url} : {e.message}')
+        logger.error(f'{e.request_url} : {e.message}')
         repository.status = repository.UPDATE_FAILED
         repository.save()
-        return
+        return repository.get_status_display()
 
     error = None
     try:
@@ -152,8 +153,7 @@ def update_repository_task(user_email, repository_id):
                 pass
 
     except GitHubApiRequestException as e:
-        # TODO write to log
-        print(e.message)
+        logger.error(f'{e.request_url} : {e.message}')
         error = e
         raise e
 

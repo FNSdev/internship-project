@@ -21,4 +21,7 @@ RUN chmod +x /etc/service/application/run
 COPY runit/celery /etc/service/celery
 RUN chmod +x /etc/service/celery/run
 
+RUN mkdir /var/log/sandbox
+RUN touch /var/log/sandbox/github_api_client.log
+
 EXPOSE 80
